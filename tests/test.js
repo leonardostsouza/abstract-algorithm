@@ -34,7 +34,7 @@ const reduce_ = (src, returnStats, bruijn) => {
     const origNet = L.toNet(lambda);
     const reducNet = L.net.reduce(origNet);
 
-    const netToStr = net => L.toString(L.fromNet(net), bruijn);
+    const netToStr = net => JSON.stringify(net);
 
     if (returnStats) {
         return {origNet: netToStr(origNet), reducNet: netToStr(reducNet), stats: reducNet.stats};
