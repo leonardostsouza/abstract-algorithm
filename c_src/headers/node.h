@@ -2,10 +2,11 @@
 #define __NODE_H__
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #define KIND 0
 
-enum node_ports {
+typedef enum node_ports {
     PORT_1 = 1,
     PORT_2,
     PORT_3
@@ -35,9 +36,9 @@ enum node_ports {
 //
 // <SOLUÇÃO 2> Em vez de armazenar o ponteiro, armazenar o índice no vetor
 // do "node" de destino <=== Usar esta!
-typedef node_t uint32_t[4]
+typedef uint32_t node_t[4];
 
-node_t createNode(uint32_t kind, uint32_t edge1, uint32_t edge2, uint32_t edge3);
+void nodeInit(node_t *node, uint32_t kind, uint32_t edge1, uint32_t edge2, uint32_t edge3);
 
 void setKind(node_t *node, uint32_t kind);
 uint32_t getKind(node_t node);

@@ -1,9 +1,11 @@
 #include <stdlib.h>
 #include "headers/node.h"
 
-node_t createNode(uint32_t kind, uint32_t edge_1, uint32_t edge_2, uint32_t edge_3){
-    node_t newNode = {kind, edge_1, edge_2, edge_3};
-    return newNode;
+void nodeInit(node_t *node, uint32_t kind, uint32_t edge_1, uint32_t edge_2, uint32_t edge_3){
+    (*node)[0] = kind;
+    (*node)[1] = edge_1;
+    (*node)[2] = edge_2;
+    (*node)[3] = edge_3;
 }
 
 void setKind(node_t *node, uint32_t kind){
@@ -11,7 +13,7 @@ void setKind(node_t *node, uint32_t kind){
 }
 
 uint32_t getKind(node_t node){
-    return node[kind];
+    return node[KIND];
 }
 
 void setPort(node_t *orig, uint32_t destIndex, port_t origPort){
