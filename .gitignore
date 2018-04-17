@@ -1,1 +1,6 @@
 node_modules/
+c_src/test
+c_src/main
+*.o
+*.so
+*.out
