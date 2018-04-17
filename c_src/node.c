@@ -9,15 +9,15 @@ void nodeInit(node_t *node, uint32_t kind, uint32_t edge_1, uint32_t edge_2, uin
 }
 
 void setKind(node_t *node, uint32_t kind){
-    *node[KIND] = kind;
+    (*node)[KIND] = kind;
 }
 
 uint32_t getKind(node_t node){
     return node[KIND];
 }
 
-void setPort(node_t *orig, uint32_t destIndex, port_t origPort){
-    *orig[origPort] = destIndex;
+void setPort(node_t *orig, port_t origPort, uint32_t destIndex){
+    (*orig)[origPort] = destIndex;
 }
 
 uint32_t getPort(node_t node, port_t port){

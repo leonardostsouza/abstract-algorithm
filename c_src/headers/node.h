@@ -43,7 +43,7 @@ void nodeInit(node_t *node, uint32_t kind, uint32_t edge1, uint32_t edge2, uint3
 void setKind(node_t *node, uint32_t kind);
 uint32_t getKind(node_t node);
 
-void setPort(node_t *orig, uint32_t destIndex, port_t origPort);
+void setPort(node_t *orig, port_t origPort, uint32_t destIndex);
 port_t getPort(node_t node, port_t port);
 
 #endif /*__NODE_H__*/
