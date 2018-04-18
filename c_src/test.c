@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "headers/node.h"
+#include "node.h"
 
 void printNodeState(node_t *node){
   printf("KIND = %d | P1 = %d | P2 = %d | P3 = %d",
