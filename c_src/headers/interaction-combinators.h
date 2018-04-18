@@ -21,18 +21,19 @@
 // array holds the index to the last "free" prosition it has on record. The buffers
 // has the following format:
 //
-// NODE_1 | NODE_2 | ... | NODE_n | next
+// NODE_1 | NODE_2 | ... | NODE_n | NUM_NODES
 //
-//      NODE_X ->   The representation of a node in memory. Remember each node
-//                  has the format PORT_0 | PORT_1 | PORT_2 | KIND
+//      NODE_X    -> The representation of a node in memory. Remember each node
+//                   has the format PORT_0 | PORT_1 | PORT_2 | KIND
 //
-//      next ->     The last position of the buffer. Holds the next free index
-//                  in which the buffer can be written.
+//      NUM_NODES -> The last position of the buffer. Holds the next free index
+//                   in which the buffer can be written.
 //
 
 #ifndef __INTERACTION_COMBINATORS_H__
 #define __INTERACTION_COMBINATORS_H__
 
+#include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
 //#include <stddef.h>   // <---- Need to uncomment this line if buffet_t changes
@@ -47,47 +48,48 @@
 #define NEXT            MAX_BUFFER_SIZE
 
 typedef enum {PORT_0 = 0, PORT_1, PORT_2} port_t;
-typedef uint32_t kind_t;    // This value is shifted to the left so the 2 LSB may
-                            // contain the "meta"
-typedef uint8_t meta_t      // only the 2 LSB are relevant
-typedef uint32_t index_t    // Maybe will need to change to size_t* in the future
+#define kind_t uint32_t
+#define meta_t uint32_t      // only the 2 LSB are relevant
+#define index_t uint32_t    // Maybe will need to change to size_t* in the future
                             // in order to support bigger buffers.
 
-typedef index_t buffer_t[MAX_BUFFER_SIZE + 1]
+typedef index_t *buffer_t;
 
 // Allocs memory to buffer and writes 0 to all positions
 void bufferInit(buffer_t);
+void bufferReset(buffer_t);
 
-void setKind(buffer_t, index_t nodeIndex, kind_t kind);
+index_t getKindIndex(index_t nodeIndex);
+static inline void setKind(buffer_t, index_t nodeIndex, kind_t kind);
 kind_t getKind(buffer_t, index_t nodeIndex);
 
-void setMeta(buffer_t, index_t nodeIntex, meta_t meta);
+static inline void setMeta(buffer_t, index_t nodeIndex, meta_t meta);
 meta_t getMeta(buffer_t, index_t nodeIndex);
 
 // returns port type (0, 1 or 2) based on the index
-port_t getPort(index_t bufferIndex);
-index_t readPort(buffer_t, index_t nodeIndex, port_t port);
+// WARNING! The behavior is undefined if this method receives the
+// index of a node kind!
+port_t getPortType(index_t bufferIndex);
 index_t getPortIndex(index_t nodeIndex, port_t port);
-
-index_t getNodeIndex(index_t vectorIndex);
+index_t getPortValue(buffer_t, index_t nodeIndex, port_t port);
 
 // Writes a value in a node port
-void setPort(buffer_t, index_t nodeIndex, port_t localPort, index_t remotePortIndex);
+static inline void setPortValue(buffer_t, index_t nodeIndex, port_t localPort, index_t remotePortIndex);
 
 // Returns what is on the other "side" of a given port of a node pair
 index_t flip(buffer_t, index_t nodeIndex, port_t port);
 
-// returns the node index given the port index in the buffer
-index_t getNodeIndex(index_t portIndex);
-
-// writes a node to the first unused position on the buffer
-void createNode(buffer_t, kind_t kind);
+// returns the node index given an index in the buffer
+index_t getNodeIndex(index_t bufferIndex);
 
 //binds two ports given their indexes in the buffer
-void link(buffer_t, index_t fstPortIndex, index_t sndPortIndex);
+static inline void link(buffer_t, index_t fstPortIndex, index_t sndPortIndex);
 
 // Does the same as link(), but receives nodes indexes and ports as arguments
-void createWire(buffer_t, index_t fstNodeIndex, port_t fstNodePort, index_t sndNodeIndex, port_t sndNodePort);
+static inline void linkNodes(buffer_t, index_t fstNodeIndex, port_t fstNodePort, index_t sndNodeIndex, port_t sndNodePort);
+
+// writes a node to the first unused position on the buffer
+uint32_t createNode(buffer_t, kind_t kind);
 
 //@TODO : explain the reduce function
 void reduce(buffer_t);

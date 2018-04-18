@@ -1,6 +1,7 @@
 #include <stdio.h>
-#include "node.h"
+#include "interaction-combinators.h"
 
+/*
 void printNodeState(node_t *node){
   printf("KIND = %d | P1 = %d | P2 = %d | P3 = %d",
           getKind(*node),
@@ -8,10 +9,10 @@ void printNodeState(node_t *node){
           getPort(*node, PORT_2),
           getPort(*node, PORT_3));
 }
-
+*/
 
 int main() {
-  node_t myNode1, myNode2;
+  /*node_t myNode1, myNode2;
 
   printf("\n=========== INIT ===========\n");
 
@@ -43,7 +44,7 @@ int main() {
   printf("myNode1:\t");
   printNodeState(&myNode1);
   printf("\nmyNode2:\t");
-  printNodeState(&myNode2);
+  printNodeState(&myNode2);*/
 
   printf("\n=========== END ==========\n");
 

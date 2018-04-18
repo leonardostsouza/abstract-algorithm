@@ -1,5 +1,5 @@
 CC=gcc
-TEST_SOURCES=test.c node.c
+TEST_SOURCES=test.c interaction-combinators.c
 TEST_FLAGS=-o test
 INC=-I./headers/
 
