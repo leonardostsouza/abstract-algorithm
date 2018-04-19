@@ -2,8 +2,9 @@
 #include "interaction-combinators.h"
 
 // Allocs memory to buffer and writes 0 to all positions
-void bufferInit(buffer_t buf){
-    calloc(MAX_BUFFER_SIZE, sizeof(index_t));
+void bufferInit(buffer_t *buf){
+    *buf = (buffer_t) calloc(MAX_BUFFER_SIZE, sizeof(index_t));
+    if (buf == NULL) exit (1);
 }
 
 void bufferReset(buffer_t buf){
@@ -14,7 +15,7 @@ index_t getKindIndex(index_t nodeIndex) {
     return (index_t)((nodeIndex << 2) | 0x3);
 }
 
-inline void setKind(buffer_t buf, index_t nodeIndex, kind_t kind){
+void setKind(buffer_t buf, index_t nodeIndex, kind_t kind){
     buf[getKindIndex(nodeIndex)] = (kind << 2);
 }
 
@@ -22,7 +23,7 @@ kind_t getKind(buffer_t buf, index_t nodeIndex){
     return ((buf[getKindIndex(nodeIndex)]) >> 2);
 }
 
-inline void setMeta(buffer_t buf, index_t nodeIndex, meta_t meta){
+void setMeta(buffer_t buf, index_t nodeIndex, meta_t meta){
     buf[getKindIndex(nodeIndex)] |= (meta & 0x3);
 }
 
@@ -46,7 +47,7 @@ index_t getPortValue(buffer_t buf, index_t nodeIndex, port_t port){
 }
 
 // Writes a value in a node port
-inline void setPortValue(buffer_t buf, index_t nodeIndex, port_t localPort, index_t remotePortIndex){
+void setPortValue(buffer_t buf, index_t nodeIndex, port_t localPort, index_t remotePortIndex){
     buf[getPortIndex(nodeIndex, localPort)] = remotePortIndex;
 }
 
@@ -61,20 +62,20 @@ index_t getNodeIndex(index_t bufferIndex){
 }
 
 //binds two ports given their indexes in the buffer
-inline void link(buffer_t buf, index_t fstPortIndex, index_t sndPortIndex){
+void link(buffer_t buf, index_t fstPortIndex, index_t sndPortIndex){
     buf[fstPortIndex] = sndPortIndex;
     buf[sndPortIndex] = fstPortIndex;
 }
 
 // Does the same as link(buffer_t, index_t, index_t), but receives nodes indexes and ports as arguments
-inline void linkNodes(buffer_t buf, index_t fstNodeIndex, port_t fstNodePort, index_t sndNodeIndex, port_t sndNodePort){
+void linkNodes(buffer_t buf, index_t fstNodeIndex, port_t fstNodePort, index_t sndNodeIndex, port_t sndNodePort){
     link(buf, getPortIndex(fstNodeIndex, fstNodePort), getPortIndex(sndNodeIndex, sndNodePort));
 }
 
 // writes a node to the first unused position on the buffer
 uint32_t createNode(buffer_t buf, kind_t kind){
     // check the end of the buffer to know where the new node should be placed
-    index_t newNodeIndex = buf[MAX_BUFFER_SIZE];
+    index_t newNodeIndex = buf[NEXT];
 
     if (newNodeIndex < MAX_NODES){
         // All good. We can add another node
@@ -87,7 +88,7 @@ uint32_t createNode(buffer_t buf, kind_t kind){
         linkNodes(buf, newNodeIndex, PORT_1, newNodeIndex, PORT_1);
         linkNodes(buf, newNodeIndex, PORT_2, newNodeIndex, PORT_2);
 
-        buf[MAX_BUFFER_SIZE] += 1;
+        buf[NEXT] += 1;
 
         return 0; // success
     }

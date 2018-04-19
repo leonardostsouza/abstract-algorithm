@@ -38,6 +38,7 @@
 #include <stdint.h>
 //#include <stddef.h>   // <---- Need to uncomment this line if buffet_t changes
                         // to size_t* type
+#include <stdio.h>
 
 #define MAX_NODES       1024
 #define NODE_SIZE       4   // Do not change this value!
@@ -49,21 +50,21 @@
 
 typedef enum {PORT_0 = 0, PORT_1, PORT_2} port_t;
 #define kind_t uint32_t
-#define meta_t uint32_t      // only the 2 LSB are relevant
+#define meta_t uint32_t     // only the 2 LSB are relevant
 #define index_t uint32_t    // Maybe will need to change to size_t* in the future
                             // in order to support bigger buffers.
 
 typedef index_t *buffer_t;
 
 // Allocs memory to buffer and writes 0 to all positions
-void bufferInit(buffer_t);
+void bufferInit(buffer_t*);
 void bufferReset(buffer_t);
 
 index_t getKindIndex(index_t nodeIndex);
-static inline void setKind(buffer_t, index_t nodeIndex, kind_t kind);
+void setKind(buffer_t, index_t nodeIndex, kind_t kind);
 kind_t getKind(buffer_t, index_t nodeIndex);
 
-static inline void setMeta(buffer_t, index_t nodeIndex, meta_t meta);
+void setMeta(buffer_t, index_t nodeIndex, meta_t meta);
 meta_t getMeta(buffer_t, index_t nodeIndex);
 
 // returns port type (0, 1 or 2) based on the index
@@ -74,7 +75,7 @@ index_t getPortIndex(index_t nodeIndex, port_t port);
 index_t getPortValue(buffer_t, index_t nodeIndex, port_t port);
 
 // Writes a value in a node port
-static inline void setPortValue(buffer_t, index_t nodeIndex, port_t localPort, index_t remotePortIndex);
+void setPortValue(buffer_t, index_t nodeIndex, port_t localPort, index_t remotePortIndex);
 
 // Returns what is on the other "side" of a given port of a node pair
 index_t flip(buffer_t, index_t nodeIndex, port_t port);
@@ -83,10 +84,10 @@ index_t flip(buffer_t, index_t nodeIndex, port_t port);
 index_t getNodeIndex(index_t bufferIndex);
 
 //binds two ports given their indexes in the buffer
-static inline void link(buffer_t, index_t fstPortIndex, index_t sndPortIndex);
+void link(buffer_t, index_t fstPortIndex, index_t sndPortIndex);
 
 // Does the same as link(), but receives nodes indexes and ports as arguments
-static inline void linkNodes(buffer_t, index_t fstNodeIndex, port_t fstNodePort, index_t sndNodeIndex, port_t sndNodePort);
+void linkNodes(buffer_t, index_t fstNodeIndex, port_t fstNodePort, index_t sndNodeIndex, port_t sndNodePort);
 
 // writes a node to the first unused position on the buffer
 uint32_t createNode(buffer_t, kind_t kind);
