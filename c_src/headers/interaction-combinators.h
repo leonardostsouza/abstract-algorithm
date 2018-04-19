@@ -17,17 +17,23 @@
 //               different node. This position in memory holds the foreign port
 //               index in the buffer.
 
-// The buffer is composed by an array of uint32_t values. The last value in the
-// array holds the index to the last "free" prosition it has on record. The buffers
-// has the following format:
+// The buffer is composed by an array of index_t values. The last value in the
+// array holds the index to the next "free" prosition a new node needs to occupy.
+// The position right before the "NEXT" is hold information about the entry point
+// of the graph. Somewhere in the graph, there is a port pointing to itself and
+// it is used as a stating point for the "reduce" method.
 //
-// NODE_1 | NODE_2 | ... | NODE_n | NUM_NODES
+// Consequently, the buffer can be epresented as:
 //
-//      NODE_X    -> The representation of a node in memory. Remember each node
-//                   has the format PORT_0 | PORT_1 | PORT_2 | KIND
+// NODE_1 | NODE_2 | ... | NODE_n | ENTRY_POINT | NEXT
 //
-//      NUM_NODES -> The last position of the buffer. Holds the next free index
-//                   in which the buffer can be written.
+//      NODE_X      -> The representation of a node in memory. Remember each node
+//                     has the format PORT_0 | PORT_1 | PORT_2 | KIND
+//
+//      ENTRY_POINT -> The starting point for the "reduce" function
+//
+//      NEXT        -> The last position of the buffer. Holds the next free index
+//                     in which the buffer can be written.
 //
 
 #ifndef __INTERACTION_COMBINATORS_H__
@@ -45,8 +51,9 @@
                             // Each node must have 1 KIND and 3 ports for the
                             // evaluator to run optimaly
 
-#define MAX_BUFFER_SIZE (MAX_NODES * NODE_SIZE)
-#define NEXT            MAX_BUFFER_SIZE
+#define MAX_BUFFER_SIZE ((MAX_NODES * NODE_SIZE) + 2)
+#define NEXT            (MAX_BUFFER_SIZE - 1)
+#define ENTRY_POINT     (NEXT - 1)
 
 typedef enum {PORT_0 = 0, PORT_1, PORT_2} port_t;
 #define kind_t uint32_t
@@ -77,8 +84,11 @@ index_t getPortValue(buffer_t, index_t nodeIndex, port_t port);
 // Writes a value in a node port
 void setPortValue(buffer_t, index_t nodeIndex, port_t localPort, index_t remotePortIndex);
 
-// Returns what is on the other "side" of a given port of a node pair
-index_t flip(buffer_t, index_t nodeIndex, port_t port);
+// Returns what is on the other "side" of a given port index
+index_t flip(buffer_t buf, index_t portIndex);
+
+// Returns what is on the other "side" of a given node port
+index_t flip_np(buffer_t, index_t nodeIndex, port_t port);
 
 // returns the node index given an index in the buffer
 index_t getNodeIndex(index_t bufferIndex);
@@ -92,10 +102,19 @@ void linkNodes(buffer_t, index_t fstNodeIndex, port_t fstNodePort, index_t sndNo
 // writes a node to the first unused position on the buffer
 uint32_t createNode(buffer_t, kind_t kind);
 
-//@TODO : explain the reduce function
+// This walks through the graph looking for redexes, following the logical flow
+// of information, in such a way that only redexes that interfere on the normal
+// form are reduced.
 void reduce(buffer_t);
 
-//@TODO : explain the rewrite function
-void rewrite(buffer_t);
+// This performs the reduction of redexes. It, thus, implements annihilation
+// and commutation, as described on Lafont's paper on interaction combinators.
+// It is the heart of algorithm. In theory, the reduce() function above isn't
+// necessary; you could just store an array of redexes and keep applying this
+// function on them. You'd lose the lazy aspect of the algorithm, but you could,
+// in turn, perform reductions in parallel. There is an inherent tradeoff
+// between laziness and parallelization, because, by reducing nodes in parallel,
+// you inevitably reduce redexes which do not influence on the normal form.
+void rewrite(buffer_t, index_t nodeAIndex, index_t nodeBIndex);
 
 #endif /*__INTERACTION_COMBINATORS_H__*/
