@@ -3,6 +3,14 @@
 
 #define REDUCE_BUFFER_SIZE 256 // Buffer used by method reduce() to store steps
 
+void statsReset(stats_t *stats){
+    stats->loops = 0;
+    stats->rewrites = 0;
+    stats->betas = 0;
+    stats->dupls = 0;
+    stats->annis = 0;
+}
+
 // Allocs memory to buffer and writes 0 to all positions
 void bufferInit(buffer_t *buf){
     *buf = (buffer_t) calloc(MAX_BUFFER_SIZE, sizeof(index_t));
@@ -119,16 +127,16 @@ static inline void push(index_t *buffer, uint32_t *stack_size, index_t value){
 // This walks through the graph looking for redexes, following the logical flow
 // of information, in such a way that only redexes that interfere on the normal
 // form are reduced.
-void reduce(buffer_t buf /*, stats * */) {
+void reduce(buffer_t buf , stats_t *stats) {
     index_t prev, next, back;
     uint32_t stack_size = 0;
     index_t stack[REDUCE_BUFFER_SIZE];
 
     push(stack, &stack_size, buf[ENTRY_POINT]);
 
-    //resetStats();
+    statsReset(stats);
     while(stack_size > 0){
-        //++stats.loops;
+        ++stats->loops;
         prev = pop(stack, &stack_size);
         next = flip(buf, prev);
         prev = flip(buf, next);
@@ -137,13 +145,13 @@ void reduce(buffer_t buf /*, stats * */) {
             if(getPortType(prev) == PORT_0){
                 if((getPortType(next) == 0) &&
                 (getNodeIndex(next) != getNodeIndex(prev))) {
-                    // ++stats.rewrites;
+                    ++stats->rewrites;
                     if((getKind(buf, getNodeIndex(next)) == 1) &&
                     (getKind(buf, getNodeIndex(prev)))) {
-                        // ++stats.betas;
+                        ++stats->betas;
                     }
                     back = flip(buf, getPortIndex(getNodeIndex(next), getMeta(buf, getNodeIndex(next))));
-                    rewrite(buf, getNodeIndex(next), getNodeIndex(prev)/*, &stats*/);
+                    rewrite(buf, getNodeIndex(next), getNodeIndex(prev), stats);
 
                     push(stack, &stack_size, flip(buf, back));
                 }
@@ -169,7 +177,7 @@ void reduce(buffer_t buf /*, stats * */) {
 // in turn, perform reductions in parallel. There is an inherent tradeoff
 // between laziness and parallelization, because, by reducing nodes in parallel,
 // you inevitably reduce redexes which do not influence on the normal form.
-void rewrite(buffer_t buf, index_t nodeAIndex, index_t nodeBIndex){
+void rewrite(buffer_t buf, index_t nodeAIndex, index_t nodeBIndex, stats_t *stats){
     if (getKind(buf, nodeAIndex) == getKind(buf, nodeBIndex)) {
         //  a          b            a   b
         //   \        /              \ /
@@ -178,6 +186,7 @@ void rewrite(buffer_t buf, index_t nodeAIndex, index_t nodeBIndex){
         //  c          d            c   d
         link(buf, flip_np(buf, nodeAIndex, PORT_1),  flip_np(buf, nodeBIndex, PORT_1));
         link(buf, flip_np(buf, nodeAIndex, PORT_2),  flip_np(buf, nodeBIndex, PORT_2));
+        ++stats->annis;
     }
     else {
         //  a          d       a - B1 --- A1 - d
@@ -216,5 +225,7 @@ void rewrite(buffer_t buf, index_t nodeAIndex, index_t nodeBIndex){
         linkNodes(buf, nodeBIndex, PORT_0, nodeBIndex, PORT_0);
         linkNodes(buf, nodeBIndex, PORT_1, nodeBIndex, PORT_1);
         linkNodes(buf, nodeBIndex, PORT_2, nodeBIndex, PORT_2);
+
+        ++stats->dupls;
     }
 }

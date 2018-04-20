@@ -63,8 +63,18 @@ typedef enum {PORT_0 = 0, PORT_1, PORT_2} port_t;
 
 typedef index_t *buffer_t;
 
+typedef struct stats_t {
+    uint32_t loops;
+    uint32_t rewrites;
+    uint32_t betas;
+    uint32_t dupls;
+    uint32_t annis;
+} stats_t;
+
+void statsReset(stats_t *stats);
+
 // Allocs memory to buffer and writes 0 to all positions
-void bufferInit(buffer_t*);
+void bufferInit(buffer_t *);
 void bufferReset(buffer_t);
 
 index_t getKindIndex(index_t nodeIndex);
@@ -105,7 +115,7 @@ uint32_t createNode(buffer_t, kind_t kind, index_t *newNodeIndex);
 // This walks through the graph looking for redexes, following the logical flow
 // of information, in such a way that only redexes that interfere on the normal
 // form are reduced.
-void reduce(buffer_t);
+void reduce(buffer_t, stats_t *);
 
 // This performs the reduction of redexes. It, thus, implements annihilation
 // and commutation, as described on Lafont's paper on interaction combinators.
@@ -115,6 +125,6 @@ void reduce(buffer_t);
 // in turn, perform reductions in parallel. There is an inherent tradeoff
 // between laziness and parallelization, because, by reducing nodes in parallel,
 // you inevitably reduce redexes which do not influence on the normal form.
-void rewrite(buffer_t, index_t nodeAIndex, index_t nodeBIndex);
+void rewrite(buffer_t, index_t nodeAIndex, index_t nodeBIndex, stats_t *);
 
 #endif /*__INTERACTION_COMBINATORS_H__*/
