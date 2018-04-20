@@ -23,8 +23,8 @@ int main() {
     printf("\n=========== TEST BUFFER ===========\n");
     printf("bufferInit complete. buffer = 0x%x\n", buffer);
 
-    createNode(buffer, 5);
-    createNode(buffer, 10);
+    createNode(buffer, 5, NULL);
+    createNode(buffer, 10, NULL);
     printf("New node created!\n");
 
     printf("buffer[0] = %d\tbuffer[1] = %d\tbuffer[2] = %d\tbuffer[3] = %d\n",
@@ -60,8 +60,8 @@ int main() {
 
     printf("\n=========== TEST \"LINK\" & \"FLIP\" METHODS ===========\n");
 
-    printf("flip_o() == %d\n", flip(buffer, 0, PORT_1));
-    printf("flip_d() == %d\n", flip(buffer, 1, PORT_2));
+    printf("flip_o() == %d\n", flip_np(buffer, 0, PORT_1));
+    printf("flip_d() == %d\n", flip_np(buffer, 1, PORT_2));
 
     printNodeState(buffer, 0);
     puts("\n");
@@ -76,8 +76,8 @@ int main() {
     printNodeState(buffer, 1);
     puts("\n");
 
-    printf("flip_o() == %d\n", flip(buffer, 0, PORT_1));
-    printf("flip_d() == %d\n", flip(buffer, 1, PORT_2));
+    printf("flip_o() == %d\n", flip_np(buffer, 0, PORT_1));
+    printf("flip_d() == %d\n", flip_np(buffer, 1, PORT_2));
 
     free(buffer);
     printf("\n=========== END ==========\n");

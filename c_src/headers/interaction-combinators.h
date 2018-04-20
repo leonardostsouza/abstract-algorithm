@@ -100,7 +100,7 @@ void link(buffer_t, index_t fstPortIndex, index_t sndPortIndex);
 void linkNodes(buffer_t, index_t fstNodeIndex, port_t fstNodePort, index_t sndNodeIndex, port_t sndNodePort);
 
 // writes a node to the first unused position on the buffer
-uint32_t createNode(buffer_t, kind_t kind);
+uint32_t createNode(buffer_t, kind_t kind, index_t *newNodeIndex);
 
 // This walks through the graph looking for redexes, following the logical flow
 // of information, in such a way that only redexes that interfere on the normal

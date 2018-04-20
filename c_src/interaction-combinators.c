@@ -1,6 +1,8 @@
 // Implements symmetric interaction combinators with infinite node colors.
 #include "interaction-combinators.h"
 
+#define REDUCE_BUFFER_SIZE 256 // Buffer used by method reduce() to store steps
+
 // Allocs memory to buffer and writes 0 to all positions
 void bufferInit(buffer_t *buf){
     *buf = (buffer_t) calloc(MAX_BUFFER_SIZE, sizeof(index_t));
@@ -78,20 +80,24 @@ void linkNodes(buffer_t buf, index_t fstNodeIndex, port_t fstNodePort, index_t s
 }
 
 // writes a node to the first unused position on the buffer
-uint32_t createNode(buffer_t buf, kind_t kind, index_t *newNodeIndex){
+uint32_t createNode(buffer_t buf, kind_t kind, index_t *newNodeIndexPtr){
     // check the end of the buffer to know where the new node should be placed
-    *newNodeIndex = buf[NEXT];
+    index_t newNodeIndex = buf[NEXT];
 
-    if (*newNodeIndex < MAX_NODES){
+    if(newNodeIndexPtr != NULL) {
+        *newNodeIndexPtr = newNodeIndex;
+    }
+
+    if (newNodeIndex < MAX_NODES){
         // All good. We can add another node
 
         // kind
-        setKind(buf, *newNodeIndex, kind);
+        setKind(buf, newNodeIndex, kind);
 
         // loops on all ports
-        linkNodes(buf, *newNodeIndex, PORT_0, *newNodeIndex, PORT_0);
-        linkNodes(buf, *newNodeIndex, PORT_1, *newNodeIndex, PORT_1);
-        linkNodes(buf, *newNodeIndex, PORT_2, *newNodeIndex, PORT_2);
+        linkNodes(buf, newNodeIndex, PORT_0, newNodeIndex, PORT_0);
+        linkNodes(buf, newNodeIndex, PORT_1, newNodeIndex, PORT_1);
+        linkNodes(buf, newNodeIndex, PORT_2, newNodeIndex, PORT_2);
 
         buf[NEXT] += 1;
 
@@ -100,16 +106,30 @@ uint32_t createNode(buffer_t buf, kind_t kind, index_t *newNodeIndex){
     return 1; // MAX_NODES reached
 }
 
+static inline index_t pop(index_t *buffer, uint32_t *stack_size){
+    *stack_size -= 1;
+    return buffer[*stack_size];
+}
+
+static inline void push(index_t *buffer, uint32_t *stack_size, index_t value){
+    buffer[*stack_size] = value;
+    *stack_size += 1;
+}
+
 // This walks through the graph looking for redexes, following the logical flow
 // of information, in such a way that only redexes that interfere on the normal
 // form are reduced.
-void reduce(buffer_t buf /*, stats * */)){
-    index_t visit = buf[ENTRY_POINT];
+void reduce(buffer_t buf /*, stats * */) {
     index_t prev, next, back;
+    uint32_t stack_size = 0;
+    index_t stack[REDUCE_BUFFER_SIZE];
+
+    push(stack, &stack_size, buf[ENTRY_POINT]);
+
     //resetStats();
-    while(**** ??? ****){
+    while(stack_size > 0){
         //++stats.loops;
-        prev = **** ??? ****;
+        prev = pop(stack, &stack_size);
         next = flip(buf, prev);
         prev = flip(buf, next);
 
@@ -125,17 +145,17 @@ void reduce(buffer_t buf /*, stats * */)){
                     back = flip(buf, getPortIndex(getNodeIndex(next), getMeta(buf, getNodeIndex(next))));
                     rewrite(buf, getNodeIndex(next), getNodeIndex(prev)/*, &stats*/);
 
-                    **** visit.push(flip(buf, back)); ****
+                    push(stack, &stack_size, flip(buf, back));
                 }
                 else {
                     setMeta(buf, getNodeIndex(prev), 3);
-                    **** visit.push(flip(buf, getPortIndex(getNodeIndex(prev), PORT_2))); ****
-                    **** visit.push(flip(buf, getPortIndex(getNodeIndex(prev), PORT_1))); ****
+                    push(stack, &stack_size, flip(buf, getPortIndex(getNodeIndex(prev), PORT_2)));
+                    push(stack, &stack_size, flip(buf, getPortIndex(getNodeIndex(prev), PORT_1)));
                 }
-                else {
-                    setMeta(buf, getNodeIndex(prev), getPortType(prev));
-                    **** visit.push(flip(buf, getPortIndex(getNodeIndex(prev), PORT_0))); ****
-                }
+            }
+            else {
+                setMeta(buf, getNodeIndex(prev), getPortType(prev));
+                push(stack, &stack_size, flip(buf, getPortIndex(getNodeIndex(prev), PORT_0)));
             }
         }
     }
@@ -156,8 +176,8 @@ void rewrite(buffer_t buf, index_t nodeAIndex, index_t nodeBIndex){
         //     A -- B       -->       X
         //   /        \              / \
         //  c          d            c   d
-        link(buf, flip_np(buf, nodeAIndex, PORT_1)),  flip_np(buf, nodeBIndex, PORT_1)));
-        link(buf, flip_np(buf, nodeAIndex, PORT_2)),  flip_np(buf, nodeBIndex, PORT_2)));
+        link(buf, flip_np(buf, nodeAIndex, PORT_1),  flip_np(buf, nodeBIndex, PORT_1));
+        link(buf, flip_np(buf, nodeAIndex, PORT_2),  flip_np(buf, nodeBIndex, PORT_2));
     }
     else {
         //  a          d       a - B1 --- A1 - d
@@ -169,16 +189,16 @@ void rewrite(buffer_t buf, index_t nodeAIndex, index_t nodeBIndex){
         index_t *A1, *A2, *B1, *B2;
 
         // create new nodes
-        createNode(buf, getKind(nodeAIndex), A1);
-        createNode(buf, getKind(nodeAIndex), A2);
-        createNode(buf, getKind(nodeBIndex), B1);
-        createNode(buf, getKind(nodeBIndex), B2);
+        createNode(buf, getKind(buf, nodeAIndex), A1);
+        createNode(buf, getKind(buf, nodeAIndex), A2);
+        createNode(buf, getKind(buf, nodeBIndex), B1);
+        createNode(buf, getKind(buf, nodeBIndex), B2);
 
         // link new nodes with orphan nodes
-        link(buf, getPortIndex(*B1, PORT_0), flip(buf, nodeAIndex, PORT_1));
-        link(buf, getPortIndex(*B2, PORT_0), flip(buf, nodeAIndex, PORT_2));
-        link(buf, getPortIndex(*A1, PORT_0), flip(buf, nodeBIndex, PORT_1));
-        link(buf, getPortIndex(*A2, PORT_0), flip(buf, nodeBIndex, PORT_2));
+        link(buf, getPortIndex(*B1, PORT_0), flip_np(buf, nodeAIndex, PORT_1));
+        link(buf, getPortIndex(*B2, PORT_0), flip_np(buf, nodeAIndex, PORT_2));
+        link(buf, getPortIndex(*A1, PORT_0), flip_np(buf, nodeBIndex, PORT_1));
+        link(buf, getPortIndex(*A2, PORT_0), flip_np(buf, nodeBIndex, PORT_2));
 
         // Link new nodes with other new nodes
         linkNodes(buf, *A1, PORT_1, *B1, PORT_1);
