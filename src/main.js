@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+//#!/usr/bin/env node
 
 var fs = require("fs");
 var path = require("path");
@@ -31,13 +31,45 @@ try {
   process.exit();
 }
 
-var start = Date.now();
-var result = L.reduce(`${base} ${code}`, 1, bruijn);
+/*const reduce_ = (src) => {
+    const lambda = L.fromString(src);
+    const origNet = L.toNet(lambda);
+    const reducNet = L.net.reduce(origNet);
 
-console.log(result.term);
+    const netToStr = net => JSON.stringify(net.mem);
+
+    return {origNet: netToStr(origNet), reducNet: netToStr(reducNet), ptr: origNet.ptr, stats: reducNet.stats};
+}
+*/
+const statsStr = (stats) => {
+    return `${stats.loops},${stats.rewrites},${stats.dupls},${stats.annis},${stats.betas}`;
+}
+
+const toCsv = (netStr, ptr) => {
+    netStr = netStr.replace("[", "");
+    netStr = netStr.replace("]", "");
+    netStr = ptr + "," + netStr;
+    return netStr;
+}
+
+var start = Date.now();
+//var result = reduce_(`${base} ${code}`);
+var result = L.reduce(`${base} ${code}`, 1, bruijn);
+var execTime = ((Date.now() - start) / 1000);
+
+console.log(result.ptr);
+// Print results
+//console.log("Original Network: \n");
+fs.writeFile(`origNet.csv`, toCsv(result.origNet, result.ptr), function(err){if(err) return console.log(err);});
+console.log("ORIGINAL: " + result.origNet + "\n\n");
+//console.log("\n=========================================\n");
+//console.log("Reduced Network: \n")
+fs.writeFile(`reducNet.csv`, toCsv(result.reducNet, result.ptr), function(err){if(err) return console.log(err);});
+console.log("REDUCED: " + result.reducNet + "\n\n");
+fs.writeFile(`stats.mem`, statsStr(result.stats), function(err){if(err) return console.log(err);});
 if (stats) {
   console.log("");
-  console.log("- time     : " + ((Date.now() - start) / 1000) + "s");
+  console.log("- time     : " + (execTime + "s"));
   console.log("- loops    : " + result.stats.loops);
   console.log("- rewrites : " + result.stats.rewrites);
   console.log("  - dupls  : " + result.stats.dupls);

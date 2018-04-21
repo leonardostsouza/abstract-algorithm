@@ -1,5 +1,6 @@
 // Implements symmetric interaction combinators with infinite node colors.
 #include "interaction-combinators.h"
+#include <stdio.h>
 
 #define REDUCE_BUFFER_SIZE 256 // Buffer used by method reduce() to store steps
 
@@ -94,6 +95,7 @@ uint32_t createNode(buffer_t buf, kind_t kind, index_t *newNodeIndexPtr){
 
     if(newNodeIndexPtr != NULL) {
         *newNodeIndexPtr = newNodeIndex;
+        //printf("newNodeIndex = %d\n", *newNodeIndexPtr);
     }
 
     if (newNodeIndex < MAX_NODES){
@@ -109,6 +111,11 @@ uint32_t createNode(buffer_t buf, kind_t kind, index_t *newNodeIndexPtr){
 
         buf[NEXT] += 1;
 
+        /*printf("NEW NODE: K:%d, 0:%d, 1:%d, 2:%d\n",
+                getKind(buf, newNodeIndex),
+                getPortValue(buf, newNodeIndex, PORT_0),
+                getPortValue(buf, newNodeIndex, PORT_1),
+                getPortValue(buf, newNodeIndex, PORT_2));*/
         return 0; // success
     }
     return 1; // MAX_NODES reached
@@ -128,26 +135,26 @@ static inline void push(index_t *buffer, uint32_t *stack_size, index_t value){
 // of information, in such a way that only redexes that interfere on the normal
 // form are reduced.
 void reduce(buffer_t buf , stats_t *stats) {
-    index_t prev, next, back;
+    index_t prev = 0, next = 0, back = 0;
     uint32_t stack_size = 0;
     index_t stack[REDUCE_BUFFER_SIZE];
 
     push(stack, &stack_size, buf[ENTRY_POINT]);
-
     statsReset(stats);
+
     while(stack_size > 0){
         ++stats->loops;
         prev = pop(stack, &stack_size);
         next = flip(buf, prev);
         prev = flip(buf, next);
 
-        if(getMeta(buf, getNodeIndex(prev)) != 3){
-            if(getPortType(prev) == PORT_0){
+        if(getMeta(buf, getNodeIndex(prev)) != 3) {
+            if(getPortType(prev) == PORT_0) {
                 if((getPortType(next) == 0) &&
                 (getNodeIndex(next) != getNodeIndex(prev))) {
                     ++stats->rewrites;
-                    if((getKind(buf, getNodeIndex(next)) == 1) &&
-                    (getKind(buf, getNodeIndex(prev)))) {
+                    if ((getKind(buf, getNodeIndex(next)) == 1) &&
+                        (getKind(buf, getNodeIndex(prev)) == 1)) {
                         ++stats->betas;
                     }
                     back = flip(buf, getPortIndex(getNodeIndex(next), getMeta(buf, getNodeIndex(next))));
@@ -177,15 +184,30 @@ void reduce(buffer_t buf , stats_t *stats) {
 // in turn, perform reductions in parallel. There is an inherent tradeoff
 // between laziness and parallelization, because, by reducing nodes in parallel,
 // you inevitably reduce redexes which do not influence on the normal form.
-void rewrite(buffer_t buf, index_t nodeAIndex, index_t nodeBIndex, stats_t *stats){
-    if (getKind(buf, nodeAIndex) == getKind(buf, nodeBIndex)) {
+
+static void printBuffer(buffer_t buffer){
+    index_t i;
+    printf("[");
+    index_t lastValidIndex = buffer[NEXT];
+    for (i = 0; i < lastValidIndex; i++){
+        printf("%d,", buffer[i]);
+    }
+    printf("] ===> SIZE = %d\n\n\n", lastValidIndex);
+}
+
+
+void rewrite(buffer_t buf, index_t A, index_t B, stats_t *stats){
+    if (getKind(buf, A) == getKind(buf, B)) {
         //  a          b            a   b
         //   \        /              \ /
         //     A -- B       -->       X
         //   /        \              / \
         //  c          d            c   d
-        link(buf, flip_np(buf, nodeAIndex, PORT_1),  flip_np(buf, nodeBIndex, PORT_1));
-        link(buf, flip_np(buf, nodeAIndex, PORT_2),  flip_np(buf, nodeBIndex, PORT_2));
+
+        /*link(buf, flip_np(buf, A, PORT_1),  flip_np(buf, B, PORT_1));
+        link(buf, flip_np(buf, A, PORT_2),  flip_np(buf, B, PORT_2));*/
+        link(buf, flip(buf, getPortIndex(A, PORT_1)), flip(buf, getPortIndex(B, PORT_1)));
+        link(buf, flip(buf, getPortIndex(A, PORT_2)), flip(buf, getPortIndex(B, PORT_2)));
         ++stats->annis;
     }
     else {
@@ -194,38 +216,45 @@ void rewrite(buffer_t buf, index_t nodeAIndex, index_t nodeBIndex, stats_t *stat
         //     A -- B     -->         X
         //   /        \              / \
         //  b          c       b - B2 --- A2 - c
-
-        index_t *A1, *A2, *B1, *B2;
+        index_t A1, A2, B1, B2;
 
         // create new nodes
-        createNode(buf, getKind(buf, nodeAIndex), A1);
-        createNode(buf, getKind(buf, nodeAIndex), A2);
-        createNode(buf, getKind(buf, nodeBIndex), B1);
-        createNode(buf, getKind(buf, nodeBIndex), B2);
+        createNode(buf, getKind(buf, A), &A1);
+        createNode(buf, getKind(buf, A), &A2);
+        createNode(buf, getKind(buf, B), &B1);
+        createNode(buf, getKind(buf, B), &B2);
 
         // link new nodes with orphan nodes
-        link(buf, getPortIndex(*B1, PORT_0), flip_np(buf, nodeAIndex, PORT_1));
-        link(buf, getPortIndex(*B2, PORT_0), flip_np(buf, nodeAIndex, PORT_2));
-        link(buf, getPortIndex(*A1, PORT_0), flip_np(buf, nodeBIndex, PORT_1));
-        link(buf, getPortIndex(*A2, PORT_0), flip_np(buf, nodeBIndex, PORT_2));
+        /*link(buf, getPortIndex(B1, PORT_0), flip_np(buf, A, PORT_1));
+        link(buf, getPortIndex(B2, PORT_0), flip_np(buf, A, PORT_2));
+        link(buf, getPortIndex(A1, PORT_0), flip_np(buf, B, PORT_1));
+        link(buf, getPortIndex(A2, PORT_0), flip_np(buf, B, PORT_2));*/
+        link(buf, flip(buf, getPortIndex(B1, PORT_0)), flip(buf, getPortIndex(A, PORT_1)));
+        link(buf, flip(buf, getPortIndex(B2, PORT_0)), flip(buf, getPortIndex(A, PORT_2)));
+        link(buf, flip(buf, getPortIndex(A1, PORT_0)), flip(buf, getPortIndex(B, PORT_1)));
+        link(buf, flip(buf, getPortIndex(A2, PORT_0)), flip(buf, getPortIndex(B, PORT_2)));
 
         // Link new nodes with other new nodes
-        linkNodes(buf, *A1, PORT_1, *B1, PORT_1);
-        linkNodes(buf, *A1, PORT_2, *B2, PORT_1);
-        linkNodes(buf, *A2, PORT_1, *B1, PORT_2);
-        linkNodes(buf, *A2, PORT_2, *B2, PORT_2);
+        /*linkNodes(buf, A1, PORT_1, B1, PORT_1);
+        linkNodes(buf, A1, PORT_2, B2, PORT_1);
+        linkNodes(buf, A2, PORT_1, B1, PORT_2);
+        linkNodes(buf, A2, PORT_2, B2, PORT_2);*/
+        link(buf, flip(buf, getPortIndex(A1, PORT_1)), flip(buf, getPortIndex(B1, PORT_1)));
+        link(buf, flip(buf, getPortIndex(A1, PORT_2)), flip(buf, getPortIndex(B2, PORT_1)));
+        link(buf, flip(buf, getPortIndex(A2, PORT_1)), flip(buf, getPortIndex(B1, PORT_2)));
+        link(buf, flip(buf, getPortIndex(A2, PORT_2)), flip(buf, getPortIndex(B2, PORT_2)));
 
         // Unlink "old" nodes
-        setKind(buf, nodeAIndex, 0);
-        linkNodes(buf, nodeAIndex, PORT_0, nodeAIndex, PORT_0);
-        linkNodes(buf, nodeAIndex, PORT_1, nodeAIndex, PORT_1);
-        linkNodes(buf, nodeAIndex, PORT_2, nodeAIndex, PORT_2);
+        /*setKind(buf, A, 0);
+        linkNodes(buf, A, PORT_0, A, PORT_0);
+        linkNodes(buf, A, PORT_1, A, PORT_1);
+        linkNodes(buf, A, PORT_2, A, PORT_2);
 
-        setKind(buf, nodeBIndex, 0);
-        linkNodes(buf, nodeBIndex, PORT_0, nodeBIndex, PORT_0);
-        linkNodes(buf, nodeBIndex, PORT_1, nodeBIndex, PORT_1);
-        linkNodes(buf, nodeBIndex, PORT_2, nodeBIndex, PORT_2);
-
+        setKind(buf, B, 0);
+        linkNodes(buf, B, PORT_0, B, PORT_0);
+        linkNodes(buf, B, PORT_1, B, PORT_1);
+        linkNodes(buf, B, PORT_2, B, PORT_2);*/
         ++stats->dupls;
+        printBuffer(buf);
     }
 }

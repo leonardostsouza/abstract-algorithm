@@ -79,7 +79,7 @@ const toNet = term => {
   var m = [];
   return {mem: m, ptr: (function encode(term, scope){
     switch (term.tag){
-      case "Lam": 
+      case "Lam":
         var fun = I.Node(m,1);
         var era = I.Node(m,0);
         I.link(m, I.Wire(fun,1), I.Wire(era,0));
@@ -136,12 +136,15 @@ const fromNet = net => {
 };
 
 const reduce = (src, returnStats, bruijn) => {
-  const reduced = I.reduce(toNet(fromString(src)));
-  if (returnStats) {
-    return {term: toString(fromNet(reduced), bruijn), stats: reduced.stats};
-  } else {
+    const mynet = toNet(fromString(src));
+    const netStr = JSON.stringify(mynet.mem);
+    const reduced = I.reduce(mynet);
+    console.log(mynet.ptr);
+    if (returnStats) {
+    return {origNet: netStr, reducNet: JSON.stringify(reduced.mem), ptr: mynet.ptr, term: toString(fromNet(reduced), bruijn), stats: reduced.stats};
+    } else {
     return toString(fromNet(reduced));
-  };
+    };
 };
 
 module.exports = {

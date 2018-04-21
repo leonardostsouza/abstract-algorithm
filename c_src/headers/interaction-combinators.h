@@ -33,7 +33,8 @@
 //      ENTRY_POINT -> The starting point for the "reduce" function
 //
 //      NEXT        -> The last position of the buffer. Holds the next free index
-//                     in which the buffer can be written.
+//                     in which the buffer can be written. Also, the value of
+//                     NEXT/4 represents the number of nodes in the network
 //
 
 #ifndef __INTERACTION_COMBINATORS_H__
