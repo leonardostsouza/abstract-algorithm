@@ -47,7 +47,7 @@
                         // to size_t* type
 #include <stdio.h>
 
-#define MAX_NODES       1024
+#define MAX_NODES       500
 #define NODE_SIZE       4   // Do not change this value!
                             // Each node must have 1 KIND and 3 ports for the
                             // evaluator to run optimaly

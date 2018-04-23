@@ -4,6 +4,17 @@
 
 #define REDUCE_BUFFER_SIZE 256 // Buffer used by method reduce() to store steps
 
+static void printBuffer(buffer_t *buffer){
+    index_t i;
+    printf("[");
+    index_t lastValidIndex = (*buffer)[NEXT];
+    for (i = 0; i < lastValidIndex; i++){
+        printf("%d,", (*buffer)[i]);
+    }
+    printf("] ===> SIZE = %d\n\n\n", lastValidIndex);
+}
+
+
 void statsReset(stats_t *stats){
     stats->loops = 0;
     stats->rewrites = 0;
@@ -28,6 +39,7 @@ index_t getKindIndex(index_t nodeIndex) {
 
 void setKind(buffer_t buf, index_t nodeIndex, kind_t kind){
     buf[getKindIndex(nodeIndex)] = (kind << 2);
+    //printf("setKind: buf[%d] = %d\n", getKindIndex(nodeIndex), buf[getKindIndex(nodeIndex)]);
 }
 
 kind_t getKind(buffer_t buf, index_t nodeIndex){
@@ -81,6 +93,7 @@ index_t getNodeIndex(index_t bufferIndex){
 void link(buffer_t buf, index_t fstPortIndex, index_t sndPortIndex){
     buf[fstPortIndex] = sndPortIndex;
     buf[sndPortIndex] = fstPortIndex;
+    //printf("Link: buf[%d] = %d || buf[%d] = %d\n", fstPortIndex, buf[fstPortIndex], sndPortIndex, buf[sndPortIndex]);
 }
 
 // Does the same as link(buffer_t, index_t, index_t), but receives nodes indexes and ports as arguments
@@ -91,12 +104,13 @@ void linkNodes(buffer_t buf, index_t fstNodeIndex, port_t fstNodePort, index_t s
 // writes a node to the first unused position on the buffer
 uint32_t createNode(buffer_t buf, kind_t kind, index_t *newNodeIndexPtr){
     // check the end of the buffer to know where the new node should be placed
-    index_t newNodeIndex = buf[NEXT];
+    index_t newNodeIndex = getNodeIndex(buf[NEXT]);
 
     if(newNodeIndexPtr != NULL) {
         *newNodeIndexPtr = newNodeIndex;
-        //printf("newNodeIndex = %d\n", *newNodeIndexPtr);
     }
+
+    //printf("newNodeIndex = %d | newNodeIndexPtr = %d\n", newNodeIndex, *newNodeIndexPtr);
 
     if (newNodeIndex < MAX_NODES){
         // All good. We can add another node
@@ -109,13 +123,14 @@ uint32_t createNode(buffer_t buf, kind_t kind, index_t *newNodeIndexPtr){
         linkNodes(buf, newNodeIndex, PORT_1, newNodeIndex, PORT_1);
         linkNodes(buf, newNodeIndex, PORT_2, newNodeIndex, PORT_2);
 
-        buf[NEXT] += 1;
+        buf[NEXT] += NODE_SIZE;
 
         /*printf("NEW NODE: K:%d, 0:%d, 1:%d, 2:%d\n",
                 getKind(buf, newNodeIndex),
                 getPortValue(buf, newNodeIndex, PORT_0),
                 getPortValue(buf, newNodeIndex, PORT_1),
-                getPortValue(buf, newNodeIndex, PORT_2));*/
+                getPortValue(buf, newNodeIndex, PORT_2));
+        printf("=============================\n");*/
         return 0; // success
     }
     return 1; // MAX_NODES reached
@@ -185,24 +200,14 @@ void reduce(buffer_t buf , stats_t *stats) {
 // between laziness and parallelization, because, by reducing nodes in parallel,
 // you inevitably reduce redexes which do not influence on the normal form.
 
-static void printBuffer(buffer_t buffer){
-    index_t i;
-    printf("[");
-    index_t lastValidIndex = buffer[NEXT];
-    for (i = 0; i < lastValidIndex; i++){
-        printf("%d,", buffer[i]);
-    }
-    printf("] ===> SIZE = %d\n\n\n", lastValidIndex);
-}
-
-
 void rewrite(buffer_t buf, index_t A, index_t B, stats_t *stats){
     if (getKind(buf, A) == getKind(buf, B)) {
-        //  a          b            a   b
+        /*/  a          b            a   b
         //   \        /              \ /
         //     A -- B       -->       X
         //   /        \              / \
         //  c          d            c   d
+        */
 
         /*link(buf, flip_np(buf, A, PORT_1),  flip_np(buf, B, PORT_1));
         link(buf, flip_np(buf, A, PORT_2),  flip_np(buf, B, PORT_2));*/
@@ -211,11 +216,12 @@ void rewrite(buffer_t buf, index_t A, index_t B, stats_t *stats){
         ++stats->annis;
     }
     else {
-        //  a          d       a - B1 --- A1 - d
+        /*/  a          d       a - B1 --- A1 - d
         //   \        /              \ /
         //     A -- B     -->         X
         //   /        \              / \
         //  b          c       b - B2 --- A2 - c
+        */
         index_t A1, A2, B1, B2;
 
         // create new nodes
@@ -223,6 +229,8 @@ void rewrite(buffer_t buf, index_t A, index_t B, stats_t *stats){
         createNode(buf, getKind(buf, A), &A2);
         createNode(buf, getKind(buf, B), &B1);
         createNode(buf, getKind(buf, B), &B2);
+
+        printf("A1 = %d; A2 = %d; B1 = %d; B2 = %d\n", A1, A2, B1, B2);//getPortIndex(A1, PORT_0), getPortIndex(A2, PORT_0), getPortIndex(B1, PORT_0), getPortIndex(B2, PORT_0));
 
         // link new nodes with orphan nodes
         /*link(buf, getPortIndex(B1, PORT_0), flip_np(buf, A, PORT_1));
@@ -255,6 +263,6 @@ void rewrite(buffer_t buf, index_t A, index_t B, stats_t *stats){
         linkNodes(buf, B, PORT_1, B, PORT_1);
         linkNodes(buf, B, PORT_2, B, PORT_2);*/
         ++stats->dupls;
-        printBuffer(buf);
+        printBuffer(&buf);
     }
 }

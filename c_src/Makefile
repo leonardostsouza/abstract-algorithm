@@ -1,6 +1,6 @@
 CC=gcc
 SOURCES=main.c interaction-combinators.c
-FLAGS=-o main
+FLAGS=-o main -Wall
 TEST_SOURCES=test.c interaction-combinators.c
 TEST_FLAGS=-o test
 INC=-I./headers/
