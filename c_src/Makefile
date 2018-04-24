@@ -1,6 +1,6 @@
 CC=gcc
 SOURCES=main.c interaction-combinators.c
-FLAGS=-o main
+FLAGS=-o main -O2
 DBG_FLAGS = -Wall -D__DEBUG__ -o main_dbg
 TEST_SOURCES=test.c interaction-combinators.c
 TEST_FLAGS=-o test
