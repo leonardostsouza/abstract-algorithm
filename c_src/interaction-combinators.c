@@ -17,6 +17,15 @@ static void printBuffer(buffer_t *buffer){
     }
     printf("] ===> SIZE = %d\n\n\n", lastValidIndex);
 }
+
+static void printNode(buffer_t buf, char *nodeName, index_t nodeIndex){
+    printf("%s: P0 = %d, P1 = %d, P2 = %d, KIND = %d\n",
+            nodeName,
+            getPortValue(buf, nodeIndex, PORT_0),
+            getPortValue(buf, nodeIndex, PORT_1),
+            getPortValue(buf, nodeIndex, PORT_2),
+            getKind(buf, nodeIndex));
+}
 #endif /*__DEBUG__*/
 
 void statsReset(stats_t *stats){
@@ -50,11 +59,17 @@ kind_t getKind(buffer_t buf, index_t nodeIndex){
 }
 
 void setMeta(buffer_t buf, index_t nodeIndex, meta_t meta){
-    buf[getKindIndex(nodeIndex)] |= (meta & 0x3);
+    //buf[getKindIndex(nodeIndex)] += (meta & 0x3);
+    buf[getKindIndex(nodeIndex)] = (buf[getKindIndex(nodeIndex)] & 0xFFFFFFFC) | meta;
+    #ifdef __DEBUG__
+    printf("Meta of node %d set to %d.\n",
+            nodeIndex,
+            getMeta(buf, nodeIndex));
+    #endif /*__DEBUG__*/
 }
 
 meta_t getMeta(buffer_t buf, index_t nodeIndex){
-    return (buf[getKindIndex(nodeIndex)] & 0x3);
+    return (meta_t)(buf[getKindIndex(nodeIndex)] & 0x3);
 }
 
 // returns port type (0, 1 or 2) based on the index
@@ -124,13 +139,6 @@ uint32_t createNode(buffer_t buf, kind_t kind, index_t *newNodeIndexPtr){
 
         buf[NEXT] += NODE_SIZE;
 
-        #ifdef __DEBUG__
-        printf("New node included. NODE_INDEX = %d, KIND = %d, PORT_0_INDEX = %d\n",
-                newNodeIndex,
-                getKind(buf, newNodeIndex),
-                getPortIndex(newNodeIndex, PORT_0));
-        #endif /*__DEBUG__*/
-
         return 0; // success
     }
     return 1; // MAX_NODES reached
@@ -164,25 +172,46 @@ void reduce(buffer_t buf , stats_t *stats) {
 
     while(stack_size > 0){
         ++stats->loops;
+
         prev = pop(stack, &stack_size);
         next = flip(buf, prev);
         prev = flip(buf, next);
 
         #ifdef __DEBUG__
-        printf("===========> Loop number %d:\n", stats->loops);
+        printf("===========> Loop number %d: prev = %d, next = %d\n",
+                stats->loops, prev, next);
         #endif /*__DEBUG__*/
 
-        if(getMeta(buf, getNodeIndex(prev)) != 3) {
+        if(getMeta(buf, getNodeIndex(prev)) == (meta_t)0x3) {
+            #ifdef __DEBUG__
+            printf("Node %d meta == %d. Proceeding to next loop...\n",
+                    getNodeIndex(prev),
+                    getMeta(buf, getNodeIndex(prev)));
+            #endif /*__DEBUG__*/
+        }
+        else {
             if(getPortType(prev) == PORT_0) {
                 if((getPortType(next) == 0) &&
                 (getNodeIndex(next) != getNodeIndex(prev))) {
                     ++stats->rewrites;
+
+                    #ifdef __DEBUG__
+                    printf("Executing rewrite number %d\n", stats->rewrites);
+                    #endif /*__DEBUG__*/
+
                     if ((getKind(buf, getNodeIndex(next)) == 1) &&
                         (getKind(buf, getNodeIndex(prev)) == 1)) {
                         ++stats->betas;
+                        #ifdef __DEBUG__
+                        printf("Beta number %d found\n", stats->betas);
+                        #endif /*__DEBUG__*/
                     }
                     back = flip(buf, getPortIndex(getNodeIndex(next), getMeta(buf, getNodeIndex(next))));
                     rewrite(buf, getNodeIndex(next), getNodeIndex(prev), stats);
+
+                    #ifdef __DEBUG__
+                    printf("New \"back\" = %d\n", back);
+                    #endif /*__DEBUG__*/
 
                     push(stack, &stack_size, flip(buf, back));
                 }
@@ -227,6 +256,10 @@ void rewrite(buffer_t buf, index_t A, index_t B, stats_t *stats){
         link(buf, flip(buf, getPortIndex(A, PORT_1)), flip(buf, getPortIndex(B, PORT_1)));
         link(buf, flip(buf, getPortIndex(A, PORT_2)), flip(buf, getPortIndex(B, PORT_2)));
         ++stats->annis;
+
+        #ifdef __DEBUG__
+        printf("Executed annis number %d\n", stats->annis);
+        #endif /*__DEBUG__*/
     }
     else {
         /*/  a          d       a - B1 --- A1 - d
@@ -242,10 +275,6 @@ void rewrite(buffer_t buf, index_t A, index_t B, stats_t *stats){
         createNode(buf, getKind(buf, A), &A2);
         createNode(buf, getKind(buf, B), &B1);
         createNode(buf, getKind(buf, B), &B2);
-
-        #ifdef __DEBUG__
-        printf("A1 = %d; A2 = %d; B1 = %d; B2 = %d\n", A1, A2, B1, B2);//getPortIndex(A1, PORT_0), getPortIndex(A2, PORT_0), getPortIndex(B1, PORT_0), getPortIndex(B2, PORT_0));
-        #endif /*__DEBUG__*/
 
         // link new nodes with orphan nodes
         link(buf, getPortIndex(B1, PORT_0), flip_np(buf, A, PORT_1));
@@ -278,5 +307,12 @@ void rewrite(buffer_t buf, index_t A, index_t B, stats_t *stats){
         linkNodes(buf, B, PORT_1, B, PORT_1);
         linkNodes(buf, B, PORT_2, B, PORT_2);*/
         ++stats->dupls;
+        #ifdef __DEBUG__
+        printf("Executed dupls number %d\n", stats->dupls);
+        //printNode(buf, "A1", A1);
+        //printNode(buf, "A2", A2);
+        //printNode(buf, "B1", B1);
+        //printNode(buf, "B2", B2);
+        #endif /*__DEBUG__*/
     }
 }
