@@ -45,7 +45,9 @@
 #include <stdint.h>
 //#include <stddef.h>   // <---- Need to uncomment this line if buffet_t changes
                         // to size_t* type
+#ifdef DEBUG
 #include <stdio.h>
+#endif
 
 #define MAX_NODES       500
 #define NODE_SIZE       4   // Do not change this value!

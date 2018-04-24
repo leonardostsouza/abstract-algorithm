@@ -1,9 +1,13 @@
 // Implements symmetric interaction combinators with infinite node colors.
 #include "interaction-combinators.h"
+
+#ifdef __DEBUG__
 #include <stdio.h>
+#endif /*__DEBUG__*/
 
 #define REDUCE_BUFFER_SIZE 256 // Buffer used by method reduce() to store steps
 
+#ifdef __DEBUG__
 static void printBuffer(buffer_t *buffer){
     index_t i;
     printf("[");
@@ -13,7 +17,7 @@ static void printBuffer(buffer_t *buffer){
     }
     printf("] ===> SIZE = %d\n\n\n", lastValidIndex);
 }
-
+#endif /*__DEBUG__*/
 
 void statsReset(stats_t *stats){
     stats->loops = 0;
@@ -39,7 +43,6 @@ index_t getKindIndex(index_t nodeIndex) {
 
 void setKind(buffer_t buf, index_t nodeIndex, kind_t kind){
     buf[getKindIndex(nodeIndex)] = (kind << 2);
-    //printf("setKind: buf[%d] = %d\n", getKindIndex(nodeIndex), buf[getKindIndex(nodeIndex)]);
 }
 
 kind_t getKind(buffer_t buf, index_t nodeIndex){
@@ -93,7 +96,6 @@ index_t getNodeIndex(index_t bufferIndex){
 void link(buffer_t buf, index_t fstPortIndex, index_t sndPortIndex){
     buf[fstPortIndex] = sndPortIndex;
     buf[sndPortIndex] = fstPortIndex;
-    //printf("Link: buf[%d] = %d || buf[%d] = %d\n", fstPortIndex, buf[fstPortIndex], sndPortIndex, buf[sndPortIndex]);
 }
 
 // Does the same as link(buffer_t, index_t, index_t), but receives nodes indexes and ports as arguments
@@ -110,11 +112,8 @@ uint32_t createNode(buffer_t buf, kind_t kind, index_t *newNodeIndexPtr){
         *newNodeIndexPtr = newNodeIndex;
     }
 
-    //printf("newNodeIndex = %d | newNodeIndexPtr = %d\n", newNodeIndex, *newNodeIndexPtr);
-
     if (newNodeIndex < MAX_NODES){
         // All good. We can add another node
-
         // kind
         setKind(buf, newNodeIndex, kind);
 
@@ -125,12 +124,13 @@ uint32_t createNode(buffer_t buf, kind_t kind, index_t *newNodeIndexPtr){
 
         buf[NEXT] += NODE_SIZE;
 
-        /*printf("NEW NODE: K:%d, 0:%d, 1:%d, 2:%d\n",
+        #ifdef __DEBUG__
+        printf("New node included. NODE_INDEX = %d, KIND = %d, PORT_0_INDEX = %d\n",
+                newNodeIndex,
                 getKind(buf, newNodeIndex),
-                getPortValue(buf, newNodeIndex, PORT_0),
-                getPortValue(buf, newNodeIndex, PORT_1),
-                getPortValue(buf, newNodeIndex, PORT_2));
-        printf("=============================\n");*/
+                getPortIndex(newNodeIndex, PORT_0));
+        #endif /*__DEBUG__*/
+
         return 0; // success
     }
     return 1; // MAX_NODES reached
@@ -154,14 +154,23 @@ void reduce(buffer_t buf , stats_t *stats) {
     uint32_t stack_size = 0;
     index_t stack[REDUCE_BUFFER_SIZE];
 
-    push(stack, &stack_size, buf[ENTRY_POINT]);
+    #ifdef __DEBUG__
+    printf("Original buffer:\n");
+    printBuffer(&buf);
+    #endif /*__DEBUG__*/
+
     statsReset(stats);
+    push(stack, &stack_size, buf[ENTRY_POINT]);
 
     while(stack_size > 0){
         ++stats->loops;
         prev = pop(stack, &stack_size);
         next = flip(buf, prev);
         prev = flip(buf, next);
+
+        #ifdef __DEBUG__
+        printf("===========> Loop number %d:\n", stats->loops);
+        #endif /*__DEBUG__*/
 
         if(getMeta(buf, getNodeIndex(prev)) != 3) {
             if(getPortType(prev) == PORT_0) {
@@ -189,6 +198,10 @@ void reduce(buffer_t buf , stats_t *stats) {
             }
         }
     }
+    #ifdef __DEBUG__
+    printf("\n\nReduced buffer:\n");
+    printBuffer(&buf);
+    #endif /*__DEBUG__*/
 }
 
 // This performs the reduction of redexes. It, thus, implements annihilation
@@ -230,27 +243,29 @@ void rewrite(buffer_t buf, index_t A, index_t B, stats_t *stats){
         createNode(buf, getKind(buf, B), &B1);
         createNode(buf, getKind(buf, B), &B2);
 
+        #ifdef __DEBUG__
         printf("A1 = %d; A2 = %d; B1 = %d; B2 = %d\n", A1, A2, B1, B2);//getPortIndex(A1, PORT_0), getPortIndex(A2, PORT_0), getPortIndex(B1, PORT_0), getPortIndex(B2, PORT_0));
+        #endif /*__DEBUG__*/
 
         // link new nodes with orphan nodes
-        /*link(buf, getPortIndex(B1, PORT_0), flip_np(buf, A, PORT_1));
+        link(buf, getPortIndex(B1, PORT_0), flip_np(buf, A, PORT_1));
         link(buf, getPortIndex(B2, PORT_0), flip_np(buf, A, PORT_2));
         link(buf, getPortIndex(A1, PORT_0), flip_np(buf, B, PORT_1));
-        link(buf, getPortIndex(A2, PORT_0), flip_np(buf, B, PORT_2));*/
-        link(buf, flip(buf, getPortIndex(B1, PORT_0)), flip(buf, getPortIndex(A, PORT_1)));
+        link(buf, getPortIndex(A2, PORT_0), flip_np(buf, B, PORT_2));
+        /*link(buf, flip(buf, getPortIndex(B1, PORT_0)), flip(buf, getPortIndex(A, PORT_1)));
         link(buf, flip(buf, getPortIndex(B2, PORT_0)), flip(buf, getPortIndex(A, PORT_2)));
         link(buf, flip(buf, getPortIndex(A1, PORT_0)), flip(buf, getPortIndex(B, PORT_1)));
-        link(buf, flip(buf, getPortIndex(A2, PORT_0)), flip(buf, getPortIndex(B, PORT_2)));
+        link(buf, flip(buf, getPortIndex(A2, PORT_0)), flip(buf, getPortIndex(B, PORT_2)));*/
 
         // Link new nodes with other new nodes
-        /*linkNodes(buf, A1, PORT_1, B1, PORT_1);
+        linkNodes(buf, A1, PORT_1, B1, PORT_1);
         linkNodes(buf, A1, PORT_2, B2, PORT_1);
         linkNodes(buf, A2, PORT_1, B1, PORT_2);
-        linkNodes(buf, A2, PORT_2, B2, PORT_2);*/
-        link(buf, flip(buf, getPortIndex(A1, PORT_1)), flip(buf, getPortIndex(B1, PORT_1)));
+        linkNodes(buf, A2, PORT_2, B2, PORT_2);
+        /*link(buf, flip(buf, getPortIndex(A1, PORT_1)), flip(buf, getPortIndex(B1, PORT_1)));
         link(buf, flip(buf, getPortIndex(A1, PORT_2)), flip(buf, getPortIndex(B2, PORT_1)));
         link(buf, flip(buf, getPortIndex(A2, PORT_1)), flip(buf, getPortIndex(B1, PORT_2)));
-        link(buf, flip(buf, getPortIndex(A2, PORT_2)), flip(buf, getPortIndex(B2, PORT_2)));
+        link(buf, flip(buf, getPortIndex(A2, PORT_2)), flip(buf, getPortIndex(B2, PORT_2)));*/
 
         // Unlink "old" nodes
         /*setKind(buf, A, 0);
@@ -263,6 +278,5 @@ void rewrite(buffer_t buf, index_t A, index_t B, stats_t *stats){
         linkNodes(buf, B, PORT_1, B, PORT_1);
         linkNodes(buf, B, PORT_2, B, PORT_2);*/
         ++stats->dupls;
-        printBuffer(&buf);
     }
 }
