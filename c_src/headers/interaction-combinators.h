@@ -40,14 +40,10 @@
 #ifndef __INTERACTION_COMBINATORS_H__
 #define __INTERACTION_COMBINATORS_H__
 
-#include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
-//#include <stddef.h>   // <---- Need to uncomment this line if buffet_t changes
-                        // to size_t* type
-#ifdef DEBUG
 #include <stdio.h>
-#endif
+#include <string.h>
 
 #define MAX_NODES       1024
 #define NODE_SIZE       4   // Do not change this value!
@@ -57,6 +53,8 @@
 #define MAX_BUFFER_SIZE ((MAX_NODES * NODE_SIZE) + 2)
 #define NEXT            (MAX_BUFFER_SIZE - 1)
 #define ENTRY_POINT     (NEXT - 1)
+
+#define REDUCE_BUFFER_SIZE 256 // Buffer used by method reduce() to store steps
 
 typedef enum {PORT_0 = 0, PORT_1, PORT_2} port_t;
 #define kind_t uint32_t
@@ -79,6 +77,8 @@ void statsReset(stats_t *stats);
 // Allocs memory to buffer and writes 0 to all positions
 void bufferInit(buffer_t *);
 void bufferReset(buffer_t);
+void freeBuffer(buffer_t);
+uint8_t populateBuffer(char *netFileName, buffer_t buf);
 
 index_t getKindIndex(index_t nodeIndex);
 void setKind(buffer_t, index_t nodeIndex, kind_t kind);

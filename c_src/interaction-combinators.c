@@ -2,12 +2,6 @@
 #include "interaction-combinators.h"
 
 #ifdef __DEBUG__
-#include <stdio.h>
-#endif /*__DEBUG__*/
-
-#define REDUCE_BUFFER_SIZE 256 // Buffer used by method reduce() to store steps
-
-#ifdef __DEBUG__
 static void printBuffer(buffer_t *buffer){
     index_t i;
     printf("[");
@@ -28,7 +22,7 @@ static void printNode(buffer_t buf, char *nodeName, index_t nodeIndex){
 }
 #endif /*__DEBUG__*/
 
-void statsReset(stats_t *stats){
+void statsReset(stats_t *stats) {
     stats->loops = 0;
     stats->rewrites = 0;
     stats->betas = 0;
@@ -46,6 +40,46 @@ void bufferReset(buffer_t buf){
     memset(buf, 0, sizeof buf);
 }
 
+void freeBuffer(buffer_t buf){
+    free(buf);
+}
+
+// returns 0 on success and 1 on failure
+uint8_t populateBuffer(char *netFileName, buffer_t buf) {
+    FILE *netFile;
+    char *line, *pch;
+    size_t line_len = 0;
+    index_t index = 0;
+
+    // open file
+    netFile = fopen(netFileName, "r");
+    if(netFile == NULL) {
+        #ifdef __DEBUG__
+        printf("ERROR --> populateBuffer(): Network File is not open!");
+        #endif /*__DEBUG__*/
+        return 1; // file not open
+    }
+
+    // populate network buffer
+    getline(&line, &line_len, netFile);
+    pch = strtok(line, ","); // get "entry_point" value
+    buf[ENTRY_POINT] = (index_t) strtoul(pch, NULL, 10);
+
+    pch = strtok(NULL, ","); // other values
+    while(pch != NULL) {
+        buf[index] = (index_t) strtoul(pch, NULL, 10);
+        ++index;
+        pch = strtok(NULL, ",");
+    }
+    buf[NEXT] = index;
+
+    fclose(netFile);
+    free(line);
+    free(pch);
+
+    return 0; //SUCCESS
+}
+
 index_t getKindIndex(index_t nodeIndex) {
     return (index_t)((nodeIndex << 2) | 0x3);
 }
@@ -59,7 +93,6 @@ kind_t getKind(buffer_t buf, index_t nodeIndex){
 }
 
 void setMeta(buffer_t buf, index_t nodeIndex, meta_t meta){
-    //buf[getKindIndex(nodeIndex)] += (meta & 0x3);
     buf[getKindIndex(nodeIndex)] = (buf[getKindIndex(nodeIndex)] & 0xFFFFFFFC) | meta;
     #ifdef __DEBUG__
     printf("Meta of node %d set to %d.\n",
@@ -251,8 +284,6 @@ void rewrite(buffer_t buf, index_t A, index_t B, stats_t *stats){
         //  c          d            c   d
         */
 
-        /*link(buf, flip_np(buf, A, PORT_1),  flip_np(buf, B, PORT_1));
-        link(buf, flip_np(buf, A, PORT_2),  flip_np(buf, B, PORT_2));*/
         link(buf, flip(buf, getPortIndex(A, PORT_1)), flip(buf, getPortIndex(B, PORT_1)));
         link(buf, flip(buf, getPortIndex(A, PORT_2)), flip(buf, getPortIndex(B, PORT_2)));
         ++stats->annis;
@@ -281,38 +312,16 @@ void rewrite(buffer_t buf, index_t A, index_t B, stats_t *stats){
         link(buf, getPortIndex(B2, PORT_0), flip_np(buf, A, PORT_2));
         link(buf, getPortIndex(A1, PORT_0), flip_np(buf, B, PORT_1));
         link(buf, getPortIndex(A2, PORT_0), flip_np(buf, B, PORT_2));
-        /*link(buf, flip(buf, getPortIndex(B1, PORT_0)), flip(buf, getPortIndex(A, PORT_1)));
-        link(buf, flip(buf, getPortIndex(B2, PORT_0)), flip(buf, getPortIndex(A, PORT_2)));
-        link(buf, flip(buf, getPortIndex(A1, PORT_0)), flip(buf, getPortIndex(B, PORT_1)));
-        link(buf, flip(buf, getPortIndex(A2, PORT_0)), flip(buf, getPortIndex(B, PORT_2)));*/
 
         // Link new nodes with other new nodes
         linkNodes(buf, A1, PORT_1, B1, PORT_1);
         linkNodes(buf, A1, PORT_2, B2, PORT_1);
         linkNodes(buf, A2, PORT_1, B1, PORT_2);
         linkNodes(buf, A2, PORT_2, B2, PORT_2);
-        /*link(buf, flip(buf, getPortIndex(A1, PORT_1)), flip(buf, getPortIndex(B1, PORT_1)));
-        link(buf, flip(buf, getPortIndex(A1, PORT_2)), flip(buf, getPortIndex(B2, PORT_1)));
-        link(buf, flip(buf, getPortIndex(A2, PORT_1)), flip(buf, getPortIndex(B1, PORT_2)));
-        link(buf, flip(buf, getPortIndex(A2, PORT_2)), flip(buf, getPortIndex(B2, PORT_2)));*/
 
-        // Unlink "old" nodes
-        /*setKind(buf, A, 0);
-        linkNodes(buf, A, PORT_0, A, PORT_0);
-        linkNodes(buf, A, PORT_1, A, PORT_1);
-        linkNodes(buf, A, PORT_2, A, PORT_2);
-
-        setKind(buf, B, 0);
-        linkNodes(buf, B, PORT_0, B, PORT_0);
-        linkNodes(buf, B, PORT_1, B, PORT_1);
-        linkNodes(buf, B, PORT_2, B, PORT_2);*/
         ++stats->dupls;
         #ifdef __DEBUG__
         printf("Executed dupls number %d\n", stats->dupls);
-        //printNode(buf, "A1", A1);
-        //printNode(buf, "A2", A2);
-        //printNode(buf, "B1", B1);
-        //printNode(buf, "B2", B2);
         #endif /*__DEBUG__*/
     }
 }
