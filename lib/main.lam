@@ -45,11 +45,37 @@
     #n #succ #zero /succ n
     #succ #zero zero
 
+@Nat.suc #n
+  #suc #zer /suc n
+
+@Nat.zer
+  #suc #zer zer
+
+@Nat.id /Y #R #n
+  //n
+    #n /Nat.suc /R n
+    Nat.zer
+
+@Nat.isEven /Y #R #n #fal #tru
+  //n
+    #n ///R n tru fal
+    tru
+
+@Nat.copy #f /Y #R #n
+  //n
+    #n #x /f //R n x
+    #m m
+
+@Nat.add /Nat.copy Nat.suc
+
 @Bool.false
   #false #true false
 
 @Bool.true
   #false #true true
+
+@Bool.id #x
+  //x Bool.false Bool.true
 
 @Bool.not #b #false #true
   //b true false
@@ -57,23 +83,26 @@
 @Bool.xor #a
   //a id Bool.not
 
+@Bool.and #a
+  //a #b Bool.false #b b
+
 @Bool.if #b #caseTrue #caseFalse
   //b caseFalse caseTrue
 
-@Fold.nil #con #nil
+@CList.nil #con #nil
   nil
 
-@Fold.con #x #xs #con #nil
+@CList.con #x #xs #con #nil
   //con
     x
     //xs con nil
 
-@Fold.map #f #xs #con #nil
+@CList.map #f #xs #con #nil
   //xs
     #x /con /f x
     nil
 
-@Fold.zip #f #xs #ys #con #nil
+@CList.zip #f #xs #ys #con #nil
   ///xs
     #x #xs #ys //ys
       #y #ys //con //f x y /xs ys
@@ -83,7 +112,7 @@
       #x #xs #con #nil //con x xs
       #con #nil nil
       
-@Fold.nth #x #i #xs
+@CList.nth #x #i #xs
   ////xs
     #x #xs #i //i
       #i /xs i
@@ -92,21 +121,33 @@
     /CNat.toNat i
     x
 
+@CList.gen #n #f #con #nil
+  ///n
+    #n #k //con /f k /n /CNat.suc k
+    #k nil
+    CNat.zer
+
+@CList.len #xs #suc #zer
+  //xs #x #xs /suc xs zer
+
+@CList.id #xs
+  //xs CList.con CList.nil
+
 @List.con #x #xs #con #nil
   //con x xs
 
 @List.nil #con #nil
   nil
 
-@List.map #f /Y #R #xs
+@List.old_fold /Y #R #xs
+  //xs
+    #x #xs //CList.con x /R xs
+    CList.nil
+
+@List.old_map #f /Y #R #xs
   //xs
     #x #xs //List.con /f x /R xs
     List.nil
-
-@List.fold /Y #R #xs
-  //xs
-    #x #xs //Fold.con x /R xs
-    Fold.nil
 
 @List.defold #xs
   //xs List.con List.nil
@@ -116,19 +157,109 @@
     #x #xs x
     x
 
-@InfList.tail #il
-  /il #h #t t
+@List.id /Y #R #xs
+  //xs
+    #x #xs //List.con x /R xs
+    List.nil
 
-@InfList.head #il
-  /il #h #t h
+@List.fold /Y #R #xs #con #nil
+  //xs
+    #x #xs //con x /R xs
+    nil
 
-@InfList.nth #n #il
-  /InfList.head //n InfList.tail il
+@List.toCList /Y #R #xs
+  //xs
+    #x #xs //CList.con x /R xs
+    CList.nil
 
-@InfList.take #n
+@List.map #f #xs #con #nil
+  ///List.fold xs #x /con /f x nil
+
+@List.zip #f /Y #R #xs #ys #con #nil
+  //xs 
+    #x #xs //ys
+      #y #ys //con //f x y //R xs ys
+      nil
+    nil
+
+@List.suc /Y #R #xs #con #nil
+  //xs
+    #x ///x
+      #con #xs //con Bool.true xs
+      #con #xs //con Bool.false /R xs
+      con
+    nil
+
+@List.gen #n #f
+  ///n
+    #n #k //List.con /f k /n /CNat.suc k
+    #k List.nil
+    CNat.zer
+
+@Tuple.edit #n
   //n
-    #p #il /il #h #t #con #nil //con h /p t
-    #il #con #nil nil
+    #X #A /X #T #V /A #t //T t V
+    #A /A #t t
+
+@Tuple.open #n #t #fn
+  /t //Tuple.edit n fn
+
+@Tuple.id #n #t
+  ///Tuple.open n t id
+
+@Tuple.new #n
+  //Tuple.edit n #x x
+
+@Tuple.rtl #n #m /m #T #t
+  /T #A ///Tuple.edit n #T //T #A t A #x x
+
+@Tuple.rtr #n #m /m #T #t
+  /T ///Tuple.edit n #T #A /T #a /t A #x x
+
+@Tuple.toCList #n #t #con #nil
+  /t ///n
+    #term #edit #v /term #xs /edit //con v xs
+    #edit /edit nil
+    #x x
+
+@Tuple.fromCList #xs #t
+  ///xs
+    #x #xs #r /xs /r x
+    #r r
+    t 
+
+@Tuple.fromList #xs
+  /Tuple.fromCList /List.toCList xs
+
+@Tuple.zip #n #f #a #b #t
+  ///Tuple.open n a #A
+  ///Tuple.open n b #B
+  //Tuple.fromCList
+    ///CList.zip
+      f
+      //Tuple.toCList n A
+      //Tuple.toCList n B
+    t
+
+@Tuple.map #n #f #a #t
+  ///Tuple.open n a #A
+  //Tuple.fromCList
+    //CList.map f
+      //Tuple.toCList n A
+    t
+
+@Tuple.xor #n #t
+  ///Tuple.zip n Bool.xor t
+
+@Tuple.and #n #t
+  ///Tuple.zip n Bool.and t
+
+@Tuple.not #n #t
+  ///Tuple.map n Bool.not t
+
+@Tuple.nth #n #i #t
+  ///Tuple.open n t #t
+  ///CList.nth #x x i //Tuple.toCList n t
 
 @Pair.new #a #b
   #new //new a b
@@ -151,643 +282,218 @@
 @Triple.trd #t
   /t #a #b #c c
 
-@Bin.suc /Y #r #x #a #b
-  //x b #x /a /r x
+@Bits.O #xs #O #I #E /O xs
 
-@Bin.0 /Y #r #a #b
-  /a r
+@Bits.I #xs #O #I #E /I xs
 
-@Bin.O #bs #o #i
-  /o bs
+@Bits.E     #O #I #E E
 
-@Bin.I #bs #o #i
-  /i bs
-
-@Bin.peek #n #x
-  ///n
-    #t /t #x //x
-      #x #r #t //t x #a #b #c ///r a b /a c
-      #x #r #t //t x #a #b #c ///r a b /b c
-    #t //t x #a #b #c c
-    #x #r r
-
-@Bin.add /Y #R #xxs #yys
-  ///xxs
-    #xs #t //t id xs
-    #xs #t //t Bin.suc xs
-    #f #xs ///yys
-      #ys #t //t id ys
-      #ys #t //t Bin.suc ys
-      #g #ys /f /g /Bin.O //R xs ys
-
-@Bin.mul #xxs
-  / #f /Y #R #yys
-    ///yys
-      #ys #R    /Bin.O /R ys
-      #ys #R /f /Bin.O /R ys
-      R
-    /Bin.add xxs
-
-@Bin.fromCNat #c
-  //c Bin.suc Bin.0
-
-@Bin.1
-  /Bin.suc Bin.0
-
-@Bin.2
-  /Bin.suc Bin.1
-
-@Bin.3
-  /Bin.suc Bin.2
-
-@Bin.4
-  /Bin.suc Bin.3
-
-@Bin.5
-  /Bin.suc Bin.4
-
-@Bin.6
-  /Bin.suc Bin.5
-
-@Bin.7
-  /Bin.suc Bin.6
-
-@Bin.8
-  /Bin.suc Bin.7
-
-@Bin.9
-  /Bin.suc Bin.8
-
-@Bin.27
-  /Bin.I /Bin.I /Bin.I /Bin.O /Bin.I Bin.0
-
-@Bin.137
-  /Bin.I /Bin.O /Bin.O /Bin.I /Bin.O /Bin.O /Bin.O /Bin.I Bin.0
-
-@Bin.rnd8.a
-  /Bin.I /Bin.O /Bin.I /Bin.O /Bin.I /Bin.I /Bin.I /Bin.O Bin.0
-
-@Bin.rnd8.b
-  /Bin.I /Bin.O /Bin.O /Bin.O /Bin.O /Bin.O /Bin.O /Bin.O Bin.0
-
-@Bin.rnd32.a
-  /Bin.I /Bin.O /Bin.I /Bin.O /Bin.I /Bin.I /Bin.I /Bin.O
-  /Bin.O /Bin.O /Bin.O /Bin.O /Bin.O /Bin.O /Bin.I /Bin.O
-  /Bin.I /Bin.O /Bin.O /Bin.O /Bin.I /Bin.O /Bin.I /Bin.O
-  /Bin.O /Bin.O /Bin.O /Bin.O /Bin.I /Bin.I /Bin.I /Bin.I
-  /Bin.I /Bin.I /Bin.O /Bin.I /Bin.O /Bin.I /Bin.I /Bin.O
-  /Bin.O /Bin.I /Bin.I /Bin.I /Bin.O /Bin.I /Bin.O /Bin.I
-  /Bin.O /Bin.O /Bin.O /Bin.O /Bin.I /Bin.I /Bin.I /Bin.O
-  /Bin.O /Bin.I /Bin.I /Bin.I /Bin.I /Bin.O /Bin.O /Bin.O
-  Bin.0
-
-@Bin.rnd32.b
-  /Bin.I /Bin.O /Bin.O /Bin.O /Bin.O /Bin.O /Bin.O /Bin.O
-  /Bin.O /Bin.I /Bin.O /Bin.I /Bin.I /Bin.I /Bin.O /Bin.O
-  /Bin.O /Bin.I /Bin.I /Bin.O /Bin.O /Bin.I /Bin.I /Bin.I
-  /Bin.O /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O /Bin.I /Bin.I
-  /Bin.I /Bin.O /Bin.I /Bin.I /Bin.I /Bin.I /Bin.O /Bin.O
-  /Bin.O /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O /Bin.I /Bin.O
-  /Bin.O /Bin.I /Bin.I /Bin.O /Bin.I /Bin.I /Bin.O /Bin.O
-  /Bin.O /Bin.I /Bin.O /Bin.I /Bin.I /Bin.O /Bin.I /Bin.I
-  Bin.0
-
-@Bin.rnd256.a
-  /Bin.O /Bin.I /Bin.O /Bin.O /Bin.O /Bin.I /Bin.O /Bin.O
-  /Bin.I /Bin.I /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O /Bin.I
-  /Bin.O /Bin.O /Bin.O /Bin.I /Bin.O /Bin.O /Bin.O /Bin.O
-  /Bin.I /Bin.O /Bin.I /Bin.I /Bin.I /Bin.I /Bin.I /Bin.O
-  /Bin.O /Bin.O /Bin.I /Bin.O /Bin.I /Bin.O /Bin.O /Bin.I
-  /Bin.O /Bin.O /Bin.I /Bin.O /Bin.I /Bin.O /Bin.O /Bin.I
-  /Bin.O /Bin.I /Bin.I /Bin.I /Bin.I /Bin.O /Bin.O /Bin.I
-  /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O /Bin.O /Bin.I /Bin.I
-  /Bin.O /Bin.O /Bin.O /Bin.O /Bin.I /Bin.O /Bin.O /Bin.O
-  /Bin.O /Bin.O /Bin.I /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O
-  /Bin.O /Bin.O /Bin.O /Bin.O /Bin.I /Bin.O /Bin.O /Bin.O
-  /Bin.I /Bin.O /Bin.I /Bin.O /Bin.I /Bin.O /Bin.I /Bin.I
-  /Bin.O /Bin.O /Bin.I /Bin.O /Bin.I /Bin.I /Bin.O /Bin.I
-  /Bin.I /Bin.I /Bin.O /Bin.I /Bin.I /Bin.O /Bin.O /Bin.I
-  /Bin.O /Bin.O /Bin.I /Bin.O /Bin.I /Bin.I /Bin.O /Bin.I
-  /Bin.O /Bin.O /Bin.I /Bin.O /Bin.O /Bin.I /Bin.I /Bin.I
-  /Bin.O /Bin.I /Bin.O /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O
-  /Bin.O /Bin.O /Bin.O /Bin.O /Bin.I /Bin.I /Bin.I /Bin.O
-  /Bin.I /Bin.I /Bin.I /Bin.I /Bin.O /Bin.I /Bin.O /Bin.O
-  /Bin.O /Bin.I /Bin.I /Bin.I /Bin.I /Bin.I /Bin.O /Bin.I
-  /Bin.O /Bin.I /Bin.O /Bin.I /Bin.I /Bin.O /Bin.O /Bin.O
-  /Bin.O /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O /Bin.I /Bin.O
-  /Bin.O /Bin.I /Bin.O /Bin.I /Bin.O /Bin.O /Bin.O /Bin.I
-  /Bin.O /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O /Bin.O /Bin.O
-  /Bin.I /Bin.I /Bin.O /Bin.I /Bin.I /Bin.O /Bin.I /Bin.O
-  /Bin.I /Bin.O /Bin.O /Bin.O /Bin.O /Bin.O /Bin.I /Bin.O
-  /Bin.I /Bin.O /Bin.I /Bin.O /Bin.I /Bin.O /Bin.I /Bin.O
-  /Bin.I /Bin.O /Bin.O /Bin.I /Bin.O /Bin.O /Bin.I /Bin.I
-  /Bin.I /Bin.O /Bin.I /Bin.O /Bin.I /Bin.O /Bin.I /Bin.O
-  /Bin.O /Bin.O /Bin.I /Bin.O /Bin.I /Bin.I /Bin.I /Bin.I
-  /Bin.I /Bin.O /Bin.O /Bin.I /Bin.O /Bin.O /Bin.O /Bin.O
-  /Bin.O /Bin.I /Bin.I /Bin.I /Bin.I /Bin.I /Bin.I /Bin.I
-  Bin.0
-
-@Bin.rnd256.b
-  /Bin.O /Bin.I /Bin.O /Bin.O /Bin.O /Bin.I /Bin.I /Bin.I
-  /Bin.I /Bin.I /Bin.I /Bin.O /Bin.O /Bin.O /Bin.O /Bin.O
-  /Bin.I /Bin.O /Bin.O /Bin.O /Bin.O /Bin.I /Bin.O /Bin.O
-  /Bin.I /Bin.I /Bin.I /Bin.O /Bin.I /Bin.I /Bin.O /Bin.O
-  /Bin.I /Bin.O /Bin.I /Bin.O /Bin.O /Bin.O /Bin.O /Bin.O
-  /Bin.I /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O /Bin.I /Bin.O
-  /Bin.O /Bin.I /Bin.O /Bin.O /Bin.I /Bin.O /Bin.I /Bin.I
-  /Bin.I /Bin.I /Bin.O /Bin.I /Bin.O /Bin.I /Bin.O /Bin.O
-  /Bin.I /Bin.I /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O /Bin.O
-  /Bin.I /Bin.I /Bin.O /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O
-  /Bin.O /Bin.I /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O /Bin.O
-  /Bin.I /Bin.I /Bin.I /Bin.I /Bin.I /Bin.O /Bin.I /Bin.O
-  /Bin.I /Bin.I /Bin.I /Bin.I /Bin.I /Bin.O /Bin.I /Bin.O
-  /Bin.I /Bin.O /Bin.I /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O
-  /Bin.I /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O /Bin.O /Bin.O
-  /Bin.O /Bin.O /Bin.O /Bin.O /Bin.O /Bin.O /Bin.O /Bin.I
-  /Bin.I /Bin.O /Bin.O /Bin.I /Bin.O /Bin.O /Bin.O /Bin.I
-  /Bin.O /Bin.O /Bin.I /Bin.O /Bin.I /Bin.O /Bin.I /Bin.I
-  /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O /Bin.I /Bin.I /Bin.O
-  /Bin.I /Bin.O /Bin.I /Bin.I /Bin.O /Bin.O /Bin.O /Bin.I
-  /Bin.O /Bin.O /Bin.I /Bin.O /Bin.O /Bin.O /Bin.O /Bin.I
-  /Bin.I /Bin.O /Bin.I /Bin.O /Bin.O /Bin.I /Bin.I /Bin.I
-  /Bin.O /Bin.I /Bin.I /Bin.O /Bin.I /Bin.O /Bin.O /Bin.I
-  /Bin.I /Bin.I /Bin.O /Bin.O /Bin.I /Bin.I /Bin.O /Bin.O
-  /Bin.I /Bin.I /Bin.I /Bin.I /Bin.O /Bin.O /Bin.O /Bin.O
-  /Bin.O /Bin.O /Bin.O /Bin.O /Bin.O /Bin.I /Bin.I /Bin.I
-  /Bin.O /Bin.I /Bin.I /Bin.I /Bin.O /Bin.I /Bin.O /Bin.I
-  /Bin.I /Bin.I /Bin.O /Bin.O /Bin.O /Bin.O /Bin.I /Bin.I
-  /Bin.I /Bin.O /Bin.O /Bin.O /Bin.O /Bin.I /Bin.O /Bin.O
-  /Bin.O /Bin.O /Bin.O /Bin.O /Bin.I /Bin.O /Bin.I /Bin.I
-  /Bin.O /Bin.O /Bin.I /Bin.O /Bin.I /Bin.O /Bin.I /Bin.I
-  /Bin.O /Bin.O /Bin.I /Bin.O /Bin.I /Bin.O /Bin.O /Bin.I
-  Bin.0
-
-@Bin.toCNat #size #xxs
-  /Triple.trd
-    //size
-      #t /t #xxs
-        //xxs
-          #xs #add #ret ///Triple.new xs /CNat.double add ret
-          #xs #add #ret ///Triple.new xs /CNat.double add //CNat.add add ret
-      ///Triple.new xxs 1 0
-
-@Bin.slowAdd #xxs #yys
-  ////Bin.toCNat 32 xxs Bin.suc yys
-
-@Bin.xor /Y #R #xxs #yys
-  ///xxs
-    #xs #yys //yys
-      #ys /Bin.O //R xs ys
-      #ys /Bin.I //R xs ys
-    #xs #yys //yys
-      #ys /Bin.I //R xs ys
-      #ys /Bin.O //R xs ys
-    yys
-
-@Bin.eq #n
-  //n
-    #p #xxs ///xxs 
-      #xs #p #yys //yys
-        #ys //p xs ys
-        #ys #o #i o
-      #xs #p #yys //yys
-        #ys #o #i o
-        #ys //p xs ys
-      p
-    #xxs #yys #o #i i
-
-@CNat.printBits
-  #n #c //Bin.peek n //c Bin.suc Bin.0
-
-@Bin.test0
-  //Bin.peek 32 //Bin.add Bin.rnd32.a Bin.rnd32.b
-
-@Tuple.edit #n
-  //n
-    #X #A /X #T #V /A #t //T t V
-    #A /A #t t
-
-@Tuple.open #n #t #fn
-  /t //Tuple.edit n fn
-
-@Tuple.new #n
-  //Tuple.edit n #x x
-
-@Tuple.rotl #n #m /m #T #t
-  /T #A ///Tuple.edit n #T //T #A t A #x x
-
-@Tuple.rotr #n #m /m #T #t
-  /T ///Tuple.edit n #T #A /T #a /t A #x x
-
-@Tuple.fold #n #t #con #nil
-  /t ///n
-    #term #edit #v /term #xs /edit //con v xs
-    #edit /edit nil
-    #x x
-
-@Tuple.defold #xs #t
-  ///xs
-    #x #xs #r /xs /r x
-    #r r
-    t 
-
-@Tuple.zip #n #f #a #b #t
-  ///Tuple.open n a #A
-  ///Tuple.open n b #B
-  //Tuple.defold
-    ///Fold.zip
-      f
-      //Tuple.fold n A
-      //Tuple.fold n B
-    t
-
-@Tuple.xor #n #t
-  ///Tuple.zip n Bool.xor t
-
-@Tuple.nth #n #i #t
-  ///Tuple.open n t #t
-  ///Fold.nth #x x i //Tuple.fold n t
-  
-@F #a #b a
-
-@T #a #b b
-
-@X0 #t
-  ////////////////////////////////////////////////////////////////t
-  F F F F F F F T F F F F F F T T F F F F F T T T F F F F T T T T F F F T T T T T F F T T T T T T F T T T T T T T F T F T F T F T
-
-@X1 #t
-  ////////////////////////////////////////////////////////////////t
-  T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F T F 
-
-@KeccakRC
-  @I Bool.true
-  @O Bool.false
-  //List.con #t ////////////////////////////////////////////////////////////////t I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
-  //List.con #t ////////////////////////////////////////////////////////////////t O I O O O O O I O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
-  //List.con #t ////////////////////////////////////////////////////////////////t O I O I O O O I O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
-  //List.con #t ////////////////////////////////////////////////////////////////t O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
-  //List.con #t ////////////////////////////////////////////////////////////////t I I O I O O O I O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
-  //List.con #t ////////////////////////////////////////////////////////////////t I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
-  //List.con #t ////////////////////////////////////////////////////////////////t I O O O O O O I O O O O O O O I O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
-  //List.con #t ////////////////////////////////////////////////////////////////t I O O I O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
-  //List.con #t ////////////////////////////////////////////////////////////////t O I O I O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
-  //List.con #t ////////////////////////////////////////////////////////////////t O O O I O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
-  //List.con #t ////////////////////////////////////////////////////////////////t I O O I O O O O O O O O O O O I O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
-  //List.con #t ////////////////////////////////////////////////////////////////t O I O I O O O O O O O O O O O O O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
-  //List.con #t ////////////////////////////////////////////////////////////////t I I O I O O O I O O O O O O O I O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
-  //List.con #t ////////////////////////////////////////////////////////////////t I I O I O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
-  //List.con #t ////////////////////////////////////////////////////////////////t I O O I O O O I O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
-  //List.con #t ////////////////////////////////////////////////////////////////t I I O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
-  //List.con #t ////////////////////////////////////////////////////////////////t O I O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
-  //List.con #t ////////////////////////////////////////////////////////////////t O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
-  //List.con #t ////////////////////////////////////////////////////////////////t O I O I O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
-  //List.con #t ////////////////////////////////////////////////////////////////t O I O I O O O O O O O O O O O O O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
-  //List.con #t ////////////////////////////////////////////////////////////////t I O O O O O O I O O O O O O O I O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
-  //List.con #t ////////////////////////////////////////////////////////////////t O O O O O O O I O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
-  //List.con #t ////////////////////////////////////////////////////////////////t I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
-  //List.con #t ////////////////////////////////////////////////////////////////t O O O I O O O O O O O O O O O I O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
-  List.nil
-
-@Keccak.State
-  #t /////t 
-    #u /////u X0 X0 X0 X0 X0
-    #u /////u X0 X0 X0 X0 X0
-    #u /////u X0 X0 X0 X0 X0
-    #u /////u X0 X0 X0 X0 X0
-    #u /////u X0 X0 X0 X0 X0
-
-@Keccak.State.get #i #j #st
-  ///Tuple.nth 5 i ///Tuple.nth 5 j st
-
-@Fold.gen2 #n #f #con #nil
-  ///n
-    #n #f //con /f CNat.zer /n #n /f /CNat.suc n
-    #f nil
-    f
-
-@Fold.gen #n #f #con #nil
-  ///n
-    #n #k //con /f k /n /CNat.suc k
-    #k nil
-    CNat.zer
-
-@Fold.len #xs #suc #zer
-  //xs #x #xs /suc xs zer
-
-@K
-  //List.con Bool.false
-  //List.con Bool.false
-  //List.con Bool.false
-  //List.con Bool.false
-  //List.con Bool.false
-  //List.con Bool.false
-  //List.con Bool.false
-  //List.con Bool.false
-  List.nil
-
-@List.id /Y #R #xs
-  //xs
-    #x #xs //List.con x /R xs
-    List.nil
-
-@List.folds /Y #R #xs #con #nil
-  //xs
-    #x #xs //con x /R xs
-    nil
-
-@List.map #f #xs #con #nil
-  ///List.folds xs #x /con /f x nil
-
-@List.zip #f /Y #R #xs #ys #con #nil
-  //xs 
-    #x #xs //ys
-      #y #ys //con //f x y //R xs ys
-      nil
-    nil
-
-@List.suc /Y #R #xs #con #nil
-  //xs
-    #x ///x
-      #con #xs //con Bool.true xs
-      #con #xs //con Bool.false /R xs
-      con
-    nil
-
-@O #xs #O #I #E /O xs
-@I #xs #O #I #E /I xs
-@E     #O #I #E E
 @Bits.id /Y #R #xs 
   ////xs
-    #xs #R /O /R xs
-    #xs #R /I /R xs
-    #R E
+    #xs #R /Bits.O /R xs
+    #xs #R /Bits.I /R xs
+    #R Bits.E
     R
+
 @Bits.suc /Y #R #xs #O #I #E
   ///xs I #xs /O /R xs E
 
-@k32 #s #z ///0 2 s ///3 2 s ///6 2 s ///8 2 s ///12 2 s ///15 2 s ///16 2 s ///17 2 s ///18 2 s ///20 2 s ///24 2 s ///25 2 s ///26 2 s ///28 2 s z
-
-7
-
-/Bits.id //k32 Bits.suc /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O /O E
-//Bin.peek 32 //k32 Bin.suc Bin.0
-
-/List.id //64b List.suc K
-
-
-
-
-###/b ###/c ###/c ###/b ###/c ###/c ###/b ###/c ###/b ###/c ###/c ###/c ###/b ###/c ###/c ###/b ###/b ###/b ###/b ###/c ###/b ###/c ###/c ###/c ###/b ###/b ###/b ###/c ###/b ###/c ###/c ###/c ###a
-###/b ###/c ###/c ###/b ###/c ###/c ###/b ###/c ###/b ###/c ###/c ###/c ###/b ###/c ###/c ###/b ###/b ###/b ###/b ###/c ###/b ###/c ###/c ###/c ###/b ###/b ###/b ###/c ###/b ###/c ###/c ###/c ###a
-
-00 000000
-01 111111
-02 022222
-03 103333
-04 010444
-05 121055
-06 002106
-07 113210
-08 020321
-09 101432
-10 012043
-11 123154
-12 000205
-13 111316
-14 022420
-15 103031
-16 010142
-17 121253
-18 002304
-19 113415
-20 020026
-21 101130
-22 012241
-23 123352
-24 000403
-
-
-0000
-1000
-0100
-1100
-0200
-1200
-0010
-1010
-0110
-1110
-0210
-1210
-0020
-1020
-0120
-1120
-0220
-1220
-0030
-1030
-0130
-1130
-0230
-1230
-0001
-1001
-0101
-1101
-0201
-1201
-0011
-1011
-0111
-1111
-0211
-1211
-0021
-1021
-0121
-1121
-0221
-1221
-0031
-1031
-0131
-1131
-
-
-
-
-1
-0
-1
-0
-1
-0
-
-
-
-
-//256b
-  //Fold.zip
-    Bool.xor
-    /List.fold K
-  /List.fold K
-
-
-
-
-
-
-
-/List.id //128b /List.map Bool.not K
-
-
-
-
-
-
-
-
-
-
-
-
-
-#f #t /t #a #b #c #d
-  /f #t ////a b c d
-
-
-
-
-
-
-@K
-  #R //R #t /t R #con #nil //con Bool.true
-  #R //R #t /t R #con #nil //con Bool.true
-  #R //R #t /t R #con #nil //con Bool.true
-  #R //R #t /t R #con #nil //con Bool.true
-  #R //R #t /t R #con #nil nil
-
-@K.id #rxs
-  /rxs #r #xs
-    #R //R #T /T R #CON #NIL
-      //xs #x #xs //CON x /r xs
-                  NIL
-
-@K.id #rxs
-  /rxs #r #xs
-    #R //R #T /T R 
-    #CON #NIL 
-    //xs
-      #x #xs //CON x /r xs
-             #NIL NIL
-
-@K.fold #alg #con #nil
-  /alg
-    #R #xs //xs
-      #x #xs //con x /R xs
-      nil
-
-@K.id #K
-  ///K.fold K
-    #x #xs #R //R #T /T R #con #nil //con x xs
-           #R //R #T /T R #con #nil nil
-
-//2 K.id K
-
-//2 /K.map Bool.not K
-
-
-
-
-
-
-
-
-
-
-
-
-@K.fold #alg #con #nil
-  /alg
-    #R #xs //xs
-      #x #xs //con x /R xs
-      nil
-
-@K.open #rxs #f /rxs #r #xs //xs
-  #x #xs /f #R //R #T /T R #CON #NIL //CON x xs
-         /f #R //R #T /T R #CON #NIL NIL
-
-@K.map #f #rxs
-  /rxs #r #xs
-    #R //R #t /t R #CON #NIL
-    //xs
-      #x #xs //CON /f x /r xs
-             NIL
-
-@K.id #rxs /rxs #r #xs //xs
-  #x #xs #R //R #T /T R #CON #NIL //CON x /r xs
-         #R //R #T /T R #CON #NIL NIL
-
-
-
-//K.open K #K
-/K #r #xs //xs
-  #x #xs //List.con x /r xs
-  List.nil
-
-/K.fold K
-
-#/a #//a #/a b ##//b ##a
- /d #//a #/a b ##//b ##a
- /g #//a #/a b ##//b ##a
- /j #//a #/a b ##//b ##a
- /m #//a #/a b ##//b ##a
- /p #//a #/a b ##//b ##a
- /s #//a #/a b ##//b ##a
- /v #//a #/a b ##//b ##a /y #//a #/a b ##//b ##a /ba #//a #/a b ##//b ##a /ea #//a #/a b ##//b ##a /ha #//a #/a b ##//b ##a /ka #//a #/a b ##//b ##a /na #//a #/a b ##//b ##a /qa #//a #/a b ##//b ##a /ta #//a #/a b ##//b ##a /wa #//a #/a b ##a
-
-
-  #x #xs //List.con x /r 
-
-#
-  #//a #/a b /b ##//b ##a
-  #//a #/a b /e ##//b ##a
-  #//a #/a b /h ##//b ##a
-  #//a #/a b /k ##//b ##a
-
-
-//K.open #xs //xs List.con List.nil K
-
-/K.fold
-  //64 /K.map Bool.not K
-
-
-
-tabulate : ∀ {n a} {A : Set a} → (Fin n → A) → Vec A n
-tabulate {zero}  f = []
-tabulate {suc n} f = f zero ∷ tabulate (f ∘ suc)
-
-KeccakRC
-  
-  
-
-////Tuple.nth #x x 5 2 #t /////t 1 2 3 4 5
-
-//Tuple.rotr 0 1
-
-//Tuple.fst 0 #t ////t 1 2 3 4
-
-
-
-
-
-@List.open #xs #f
-  //Y #R #xs
-    ///xs
-      #x #xs #f /f #con #nil //con x /R xs
-      #f /f #con #nil nil
-      f
-    xs
-
+@Bits.add /Y #R #xs #ys
+  /////xs
+    #xs #ys ////ys
+      #ys #xs #R /Bits.O //R xs ys
+      #ys #xs #R /Bits.suc /Bits.O //R xs ys
+      #xs #R Bits.E
+      xs
+    #xs #ys ////ys
+      #ys #xs #R /Bits.suc /Bits.O //R xs ys
+      #ys #xs #R /Bits.suc /Bits.I //R xs ys 
+      #xs #R Bits.E
+      xs
+    #ys #R Bits.E
+    ys
+    R
+
+@Bits.mul #xxs
+  / #f /Y #R #yys
+    ////yys
+      #ys #R    /Bits.O /R ys
+      #ys #R /f /Bits.O /R ys
+      #R Bits.E
+      R
+    /Bits.add xxs
+
+@Bits.rnd32.a
+  /Bits.I /Bits.O /Bits.I /Bits.O /Bits.I /Bits.I /Bits.I /Bits.O
+  /Bits.O /Bits.O /Bits.O /Bits.O /Bits.O /Bits.O /Bits.I /Bits.O
+  /Bits.I /Bits.O /Bits.O /Bits.O /Bits.I /Bits.O /Bits.I /Bits.O
+  /Bits.O /Bits.O /Bits.O /Bits.O /Bits.I /Bits.I /Bits.I /Bits.I
+  /Bits.I /Bits.I /Bits.O /Bits.I /Bits.O /Bits.I /Bits.I /Bits.O
+  /Bits.O /Bits.I /Bits.I /Bits.I /Bits.O /Bits.I /Bits.O /Bits.I
+  /Bits.O /Bits.O /Bits.O /Bits.O /Bits.I /Bits.I /Bits.I /Bits.O
+  /Bits.O /Bits.I /Bits.I /Bits.I /Bits.I /Bits.O /Bits.O /Bits.O
+  Bits.E
+
+@Bits.rnd32.b
+  /Bits.I /Bits.O /Bits.O /Bits.O /Bits.O /Bits.O /Bits.O /Bits.O
+  /Bits.O /Bits.I /Bits.O /Bits.I /Bits.I /Bits.I /Bits.O /Bits.O
+  /Bits.O /Bits.I /Bits.I /Bits.O /Bits.O /Bits.I /Bits.I /Bits.I
+  /Bits.O /Bits.O /Bits.O /Bits.I /Bits.I /Bits.O /Bits.I /Bits.I
+  /Bits.I /Bits.O /Bits.I /Bits.I /Bits.I /Bits.I /Bits.O /Bits.O
+  /Bits.O /Bits.O /Bits.O /Bits.I /Bits.I /Bits.O /Bits.I /Bits.O
+  /Bits.O /Bits.I /Bits.I /Bits.O /Bits.I /Bits.I /Bits.O /Bits.O
+  /Bits.O /Bits.I /Bits.O /Bits.I /Bits.I /Bits.O /Bits.I /Bits.I
+  Bits.E
+
+@keccakf #A
+  @O Bool.false
+  @I Bool.true
+  @rc00 #t ////////////////////////////////////////////////////////////////t I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+  @rc01 #t ////////////////////////////////////////////////////////////////t O I O O O O O I O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+  @rc02 #t ////////////////////////////////////////////////////////////////t O I O I O O O I O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
+  @rc03 #t ////////////////////////////////////////////////////////////////t O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
+  @rc04 #t ////////////////////////////////////////////////////////////////t I I O I O O O I O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+  @rc05 #t ////////////////////////////////////////////////////////////////t I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+  @rc06 #t ////////////////////////////////////////////////////////////////t I O O O O O O I O O O O O O O I O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
+  @rc07 #t ////////////////////////////////////////////////////////////////t I O O I O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
+  @rc08 #t ////////////////////////////////////////////////////////////////t O I O I O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+  @rc09 #t ////////////////////////////////////////////////////////////////t O O O I O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+  @rc10 #t ////////////////////////////////////////////////////////////////t I O O I O O O O O O O O O O O I O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+  @rc11 #t ////////////////////////////////////////////////////////////////t O I O I O O O O O O O O O O O O O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+  @rc12 #t ////////////////////////////////////////////////////////////////t I I O I O O O I O O O O O O O I O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+  @rc13 #t ////////////////////////////////////////////////////////////////t I I O I O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
+  @rc14 #t ////////////////////////////////////////////////////////////////t I O O I O O O I O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
+  @rc15 #t ////////////////////////////////////////////////////////////////t I I O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
+  @rc16 #t ////////////////////////////////////////////////////////////////t O I O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
+  @rc17 #t ////////////////////////////////////////////////////////////////t O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
+  @rc18 #t ////////////////////////////////////////////////////////////////t O I O I O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+  @rc19 #t ////////////////////////////////////////////////////////////////t O I O I O O O O O O O O O O O O O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
+  @rc20 #t ////////////////////////////////////////////////////////////////t I O O O O O O I O O O O O O O I O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
+  @rc21 #t ////////////////////////////////////////////////////////////////t O O O O O O O I O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
+  @rc22 #t ////////////////////////////////////////////////////////////////t I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O
+  @rc23 #t ////////////////////////////////////////////////////////////////t O O O I O O O O O O O O O O O I O O O O O O O O O O O O O O O I O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O O I
+  @round #RC #A
+    @xor #a #b #c /a #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb #ob /b #pb #qb #rb #sb #tb #ub #vb #wb #xb #yb #zb #ac #bc #cc #dc #ec #fc #gc #hc #ic #jc #kc #lc #mc #nc #oc #pc #qc #rc #sc #tc #uc #vc #wc #xc #yc #zc #ad #bd #cd #dd #ed #fd #gd #hd #id #jd #kd #ld #md #nd #od #pd #qd #rd #sd #td #ud #vd #wd #xd #yd #zd #ae ////////////////////////////////////////////////////////////////c ///d #be be #be #ce #de //be de ce pb ///e #be be #be #ce #de //be de ce qb ///f #be be #be #ce #de //be de ce rb ///g #be be #be #ce #de //be de ce sb ///h #be be #be #ce #de //be de ce tb ///i #be be #be #ce #de //be de ce ub ///j #be be #be #ce #de //be de ce vb ///k #be be #be #ce #de //be de ce wb ///l #be be #be #ce #de //be de ce xb ///m #be be #be #ce #de //be de ce yb ///n #be be #be #ce #de //be de ce zb ///o #be be #be #ce #de //be de ce ac ///p #be be #be #ce #de //be de ce bc ///q #be be #be #ce #de //be de ce cc ///r #be be #be #ce #de //be de ce dc ///s #be be #be #ce #de //be de ce ec ///t #be be #be #ce #de //be de ce fc ///u #be be #be #ce #de //be de ce gc ///v #be be #be #ce #de //be de ce hc ///w #be be #be #ce #de //be de ce ic ///x #be be #be #ce #de //be de ce jc ///y #be be #be #ce #de //be de ce kc ///z #be be #be #ce #de //be de ce lc ///aa #be be #be #ce #de //be de ce mc ///ba #be be #be #ce #de //be de ce nc ///ca #be be #be #ce #de //be de ce oc ///da #be be #be #ce #de //be de ce pc ///ea #be be #be #ce #de //be de ce qc ///fa #be be #be #ce #de //be de ce rc ///ga #be be #be #ce #de //be de ce sc ///ha #be be #be #ce #de //be de ce tc ///ia #be be #be #ce #de //be de ce uc ///ja #be be #be #ce #de //be de ce vc ///ka #be be #be #ce #de //be de ce wc ///la #be be #be #ce #de //be de ce xc ///ma #be be #be #ce #de //be de ce yc ///na #be be #be #ce #de //be de ce zc ///oa #be be #be #ce #de //be de ce ad ///pa #be be #be #ce #de //be de ce bd ///qa #be be #be #ce #de //be de ce cd ///ra #be be #be #ce #de //be de ce dd ///sa #be be #be #ce #de //be de ce ed ///ta #be be #be #ce #de //be de ce fd ///ua #be be #be #ce #de //be de ce gd ///va #be be #be #ce #de //be de ce hd ///wa #be be #be #ce #de //be de ce id ///xa #be be #be #ce #de //be de ce jd ///ya #be be #be #ce #de //be de ce kd ///za #be be #be #ce #de //be de ce ld ///ab #be be #be #ce #de //be de ce md ///bb #be be #be #ce #de //be de ce nd ///cb #be be #be #ce #de //be de ce od ///db #be be #be #ce #de //be de ce pd ///eb #be be #be #ce #de //be de ce qd ///fb #be be #be #ce #de //be de ce rd ///gb #be be #be #ce #de //be de ce sd ///hb #be be #be #ce #de //be de ce td ///ib #be be #be #ce #de //be de ce ud ///jb #be be #be #ce #de //be de ce vd ///kb #be be #be #ce #de //be de ce wd ///lb #be be #be #ce #de //be de ce xd ///mb #be be #be #ce #de //be de ce yd ///nb #be be #be #ce #de //be de ce zd ///ob #be be #be #ce #de //be de ce ae
+    @and #a #b #c /a #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb #ob /b #pb #qb #rb #sb #tb #ub #vb #wb #xb #yb #zb #ac #bc #cc #dc #ec #fc #gc #hc #ic #jc #kc #lc #mc #nc #oc #pc #qc #rc #sc #tc #uc #vc #wc #xc #yc #zc #ad #bd #cd #dd #ed #fd #gd #hd #id #jd #kd #ld #md #nd #od #pd #qd #rd #sd #td #ud #vd #wd #xd #yd #zd #ae ////////////////////////////////////////////////////////////////c ///d #be #ce #de ce #be be pb ///e #be #ce #de ce #be be qb ///f #be #ce #de ce #be be rb ///g #be #ce #de ce #be be sb ///h #be #ce #de ce #be be tb ///i #be #ce #de ce #be be ub ///j #be #ce #de ce #be be vb ///k #be #ce #de ce #be be wb ///l #be #ce #de ce #be be xb ///m #be #ce #de ce #be be yb ///n #be #ce #de ce #be be zb ///o #be #ce #de ce #be be ac ///p #be #ce #de ce #be be bc ///q #be #ce #de ce #be be cc ///r #be #ce #de ce #be be dc ///s #be #ce #de ce #be be ec ///t #be #ce #de ce #be be fc ///u #be #ce #de ce #be be gc ///v #be #ce #de ce #be be hc ///w #be #ce #de ce #be be ic ///x #be #ce #de ce #be be jc ///y #be #ce #de ce #be be kc ///z #be #ce #de ce #be be lc ///aa #be #ce #de ce #be be mc ///ba #be #ce #de ce #be be nc ///ca #be #ce #de ce #be be oc ///da #be #ce #de ce #be be pc ///ea #be #ce #de ce #be be qc ///fa #be #ce #de ce #be be rc ///ga #be #ce #de ce #be be sc ///ha #be #ce #de ce #be be tc ///ia #be #ce #de ce #be be uc ///ja #be #ce #de ce #be be vc ///ka #be #ce #de ce #be be wc ///la #be #ce #de ce #be be xc ///ma #be #ce #de ce #be be yc ///na #be #ce #de ce #be be zc ///oa #be #ce #de ce #be be ad ///pa #be #ce #de ce #be be bd ///qa #be #ce #de ce #be be cd ///ra #be #ce #de ce #be be dd ///sa #be #ce #de ce #be be ed ///ta #be #ce #de ce #be be fd ///ua #be #ce #de ce #be be gd ///va #be #ce #de ce #be be hd ///wa #be #ce #de ce #be be id ///xa #be #ce #de ce #be be jd ///ya #be #ce #de ce #be be kd ///za #be #ce #de ce #be be ld ///ab #be #ce #de ce #be be md ///bb #be #ce #de ce #be be nd ///cb #be #ce #de ce #be be od ///db #be #ce #de ce #be be pd ///eb #be #ce #de ce #be be qd ///fb #be #ce #de ce #be be rd ///gb #be #ce #de ce #be be sd ///hb #be #ce #de ce #be be td ///ib #be #ce #de ce #be be ud ///jb #be #ce #de ce #be be vd ///kb #be #ce #de ce #be be wd ///lb #be #ce #de ce #be be xd ///mb #be #ce #de ce #be be yd ///nb #be #ce #de ce #be be zd ///ob #be #ce #de ce #be be ae
+    @not #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b #ob #pb //c pb ob #ob #pb //d pb ob #ob #pb //e pb ob #ob #pb //f pb ob #ob #pb //g pb ob #ob #pb //h pb ob #ob #pb //i pb ob #ob #pb //j pb ob #ob #pb //k pb ob #ob #pb //l pb ob #ob #pb //m pb ob #ob #pb //n pb ob #ob #pb //o pb ob #ob #pb //p pb ob #ob #pb //q pb ob #ob #pb //r pb ob #ob #pb //s pb ob #ob #pb //t pb ob #ob #pb //u pb ob #ob #pb //v pb ob #ob #pb //w pb ob #ob #pb //x pb ob #ob #pb //y pb ob #ob #pb //z pb ob #ob #pb //aa pb ob #ob #pb //ba pb ob #ob #pb //ca pb ob #ob #pb //da pb ob #ob #pb //ea pb ob #ob #pb //fa pb ob #ob #pb //ga pb ob #ob #pb //ha pb ob #ob #pb //ia pb ob #ob #pb //ja pb ob #ob #pb //ka pb ob #ob #pb //la pb ob #ob #pb //ma pb ob #ob #pb //na pb ob #ob #pb //oa pb ob #ob #pb //pa pb ob #ob #pb //qa pb ob #ob #pb //ra pb ob #ob #pb //sa pb ob #ob #pb //ta pb ob #ob #pb //ua pb ob #ob #pb //va pb ob #ob #pb //wa pb ob #ob #pb //xa pb ob #ob #pb //ya pb ob #ob #pb //za pb ob #ob #pb //ab pb ob #ob #pb //bb pb ob #ob #pb //cb pb ob #ob #pb //db pb ob #ob #pb //eb pb ob #ob #pb //fb pb ob #ob #pb //gb pb ob #ob #pb //hb pb ob #ob #pb //ib pb ob #ob #pb //jb pb ob #ob #pb //kb pb ob #ob #pb //lb pb ob #ob #pb //mb pb ob #ob #pb //nb pb ob
+    @rtl #a /a #b #c /b #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb #ob ////////////////////////////////////////////////////////////////c e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb ob d
+    @r01 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c
+    @r02 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d
+    @r03 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e
+    @r04 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f
+    @r05 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g
+    @r06 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h
+    @r07 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i
+    @r08 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j
+    @r09 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k
+    @r10 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l
+    @r11 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m
+    @r12 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n
+    @r13 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o
+    @r14 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p
+    @r15 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q
+    @r16 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r
+    @r17 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s
+    @r18 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t
+    @r19 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u
+    @r20 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v
+    @r21 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w
+    @r22 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x
+    @r23 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y
+    @r24 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z
+    @r25 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa
+    @r26 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba
+    @r27 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca
+    @r28 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da
+    @r29 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea
+    @r30 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa
+    @r31 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga
+    @r32 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha
+    @r33 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia
+    @r34 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja
+    @r35 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka
+    @r36 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la
+    @r37 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma
+    @r38 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na
+    @r39 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa
+    @r40 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa
+    @r41 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa
+    @r42 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra
+    @r43 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa
+    @r44 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta
+    @r45 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua
+    @r46 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va
+    @r47 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa
+    @r48 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b ya za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa
+    @r49 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b za ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya
+    @r50 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b ab bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za
+    @r51 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b bb cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab
+    @r52 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b cb db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb
+    @r53 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b db eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb
+    @r54 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b eb fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db
+    @r55 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b fb gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb
+    @r56 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b gb hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb
+    @r57 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b hb ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb
+    @r58 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b ib jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb
+    @r59 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b jb kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib
+    @r60 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b kb lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb
+    @r61 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b lb mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb
+    @r62 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b mb nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb
+    @r63 #a #b /a #c #d #e #f #g #h #i #j #k #l #m #n #o #p #q #r #s #t #u #v #w #x #y #z #aa #ba #ca #da #ea #fa #ga #ha #ia #ja #ka #la #ma #na #oa #pa #qa #ra #sa #ta #ua #va #wa #xa #ya #za #ab #bb #cb #db #eb #fb #gb #hb #ib #jb #kb #lb #mb #nb ////////////////////////////////////////////////////////////////b nb c d e f g h i j k l m n o p q r s t u v w x y z aa ba ca da ea fa ga ha ia ja ka la ma na oa pa qa ra sa ta ua va wa xa ya za ab bb cb db eb fb gb hb ib jb kb lb mb
+    /A #A00 #A10 #A20 #A30 #A40
+      #A01 #A11 #A21 #A31 #A41
+      #A02 #A12 #A22 #A32 #A42
+      #A03 #A13 #A23 #A33 #A43
+      #A04 #A14 #A24 #A34 #A44
+    :C0_ //xor A00 //xor A01 //xor A02 //xor A03 A04
+    :C1_ //xor A10 //xor A11 //xor A12 //xor A13 A14
+    :C2_ //xor A20 //xor A21 //xor A22 //xor A23 A24
+    :C3_ //xor A30 //xor A31 //xor A32 //xor A33 A34
+    :C4_ //xor A40 //xor A41 //xor A42 //xor A43 A44
+    :D0_ //xor C4_ /r01 C1_
+    :D1_ //xor C0_ /r01 C2_
+    :D2_ //xor C1_ /r01 C3_
+    :D3_ //xor C2_ /r01 C4_
+    :D4_ //xor C3_ /r01 C0_
+    :X00 //xor A00 D0_ :X10 //xor A10 D1_ :X20 //xor A20 D2_ :X30 //xor A30 D3_ :X40 //xor A40 D4_
+    :X01 //xor A01 D0_ :X11 //xor A11 D1_ :X21 //xor A21 D2_ :X31 //xor A31 D3_ :X41 //xor A41 D4_
+    :X02 //xor A02 D0_ :X12 //xor A12 D1_ :X22 //xor A22 D2_ :X32 //xor A32 D3_ :X42 //xor A42 D4_
+    :X03 //xor A03 D0_ :X13 //xor A13 D1_ :X23 //xor A23 D2_ :X33 //xor A33 D3_ :X43 //xor A43 D4_
+    :X04 //xor A04 D0_ :X14 //xor A14 D1_ :X24 //xor A24 D2_ :X34 //xor A34 D3_ :X44 //xor A44 D4_
+    :B00      X00 :B10 /r44 X11 :B20 /r43 X22 :B30 /r21 X33 :B40 /r14 X44
+    :B01 /r28 X30 :B11 /r20 X41 :B21 /r03 X02 :B31 /r45 X13 :B41 /r61 X24
+    :B02 /r01 X10 :B12 /r06 X21 :B22 /r25 X32 :B32 /r08 X43 :B42 /r18 X04
+    :B03 /r27 X40 :B13 /r36 X01 :B23 /r10 X12 :B33 /r15 X23 :B43 /r56 X34
+    :B04 /r62 X20 :B14 /r55 X31 :B24 /r39 X42 :B34 /r41 X03 :B44 /r02 X14
+    :Y00 //xor B00 //and /not B10 B20 :Y10 //xor B10 //and /not B20 B30
+    :Y20 //xor B20 //and /not B30 B40 :Y30 //xor B30 //and /not B40 B00
+    :Y40 //xor B40 //and /not B00 B10 :Y01 //xor B01 //and /not B11 B21
+    :Y11 //xor B11 //and /not B21 B31 :Y21 //xor B21 //and /not B31 B41
+    :Y31 //xor B31 //and /not B41 B01 :Y41 //xor B41 //and /not B01 B11
+    :Y02 //xor B02 //and /not B12 B22 :Y12 //xor B12 //and /not B22 B32
+    :Y22 //xor B22 //and /not B32 B42 :Y32 //xor B32 //and /not B42 B02
+    :Y42 //xor B42 //and /not B02 B12 :Y03 //xor B03 //and /not B13 B23
+    :Y13 //xor B13 //and /not B23 B33 :Y23 //xor B23 //and /not B33 B43
+    :Y33 //xor B33 //and /not B43 B03 :Y43 //xor B43 //and /not B03 B13
+    :Y04 //xor B04 //and /not B14 B24 :Y14 //xor B14 //and /not B24 B34
+    :Y24 //xor B24 //and /not B34 B44 :Y34 //xor B34 //and /not B44 B04
+    :Y44 //xor B44 //and /not B04 B14 :Z00 //xor A00 RC
+    #t /////////////////////////t
+      Z00 Y10 Y20 Y30 Y40
+      Y01 Y11 Y21 Y31 Y41
+      Y02 Y12 Y22 Y32 Y42
+      Y03 Y13 Y23 Y33 Y43
+      Y04 Y14 Y24 Y34 Y44
+  //round rc23 //round rc22 //round rc21 //round rc20
+  //round rc19 //round rc18 //round rc17 //round rc16
+  //round rc15 //round rc14 //round rc13 //round rc12
+  //round rc11 //round rc10 //round rc09 //round rc08
+  //round rc07 //round rc06 //round rc05 //round rc04
+  //round rc03 //round rc02 //round rc01 //round rc00
+  A
+
+@O Bool.false
+@I Bool.true
+@K0 #t ////////////////////////////////////////////////////////////////t O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I O I
+@KS #t /////////////////////////t K0 K0 K0 K0 K0 K0 K0 K0 K0 K0 K0 K0 K0 K0 K0 K0 K0 K0 K0 K0 K0 K0 K0 K0 K0
+/keccakf KS

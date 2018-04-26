@@ -41,25 +41,21 @@ function link(mem, a, b) {
 
 // This walks through the graph looking for redexes, following the logical flow
 // of information, in such a way that only redexes that interfere on the normal
-// form are reduced.
+// form are reduced. 
 function reduce(net) {
   var visit = [net.ptr];
-  //console.log(JSON.stringify(net.mem));
-  //console.log(net.ptr);
   var prev, next, back;
   net.stats = {loops: 0, rewrites: 0, betas: 0, dupls: 0, annis: 0};
   while (visit.length > 0) {
     ++net.stats.loops;
-    //console.log("prev = " + prev + " next = " + next + " back = " + back);
     prev = visit.pop();
     next = flip(net.mem, prev);
     prev = flip(net.mem, next);
-    //console.log("prev = " + prev + " next = " + next + " back = " + back);
     if (meta(net.mem, node(prev)) === 3) {
       continue;
     }
     if (port(prev) === 0) {
-      if (port(next) === 0 && node(next) !== node(prev)){
+      if (port(next) === 0 && node(next) !== node(prev)){ 
         ++net.stats.rewrites;
         if (kind(net.mem, node(next)) === 1 && kind(net.mem, node(prev)) === 1) {
           ++net.stats.betas;
@@ -91,19 +87,19 @@ function reduce(net) {
 function rewrite(mem, x, y, stats) {
   if (kind(mem,x) === kind(mem,y)){
     //  a          b            a   b
-    //   \        /              \ /
-    //     A -- B       -->       X
-    //   /        \              / \
+    //   \        /              \ / 
+    //     A -- B       -->       X  
+    //   /        \              / \ 
     //  c          d            c   d
     link(mem, flip(mem, Wire(x, 1)),  flip(mem, Wire(y, 1)));
     link(mem, flip(mem, Wire(x, 2)),  flip(mem, Wire(y, 2)));
     ++stats.annis;
   } else {
     //  a          d       a - B --- A - d
-    //   \        /              \ /
-    //     A -- B     -->         X
-    //   /        \              / \
-    //  b          c       b - B --- A - c
+    //   \        /              \ /   
+    //     A -- B     -->         X    
+    //   /        \              / \  
+    //  b          c       b - B --- A - c 
     var x1 = Node(mem, kind(mem, x)), x2 = Node(mem, kind(mem, x));
     var y1 = Node(mem, kind(mem, y)), y2 = Node(mem, kind(mem, y));
     link(mem, flip(mem, Wire(y1, 0)), flip(mem, Wire(x, 1)));
