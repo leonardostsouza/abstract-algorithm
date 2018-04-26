@@ -1,6 +1,8 @@
 node_modules/
 c_src/test
 c_src/main
+*.csv
+*.mem
 *.o
 *.so
 *.out
