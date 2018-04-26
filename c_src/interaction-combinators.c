@@ -1,26 +1,15 @@
 // Implements symmetric interaction combinators with infinite node colors.
 #include "interaction-combinators.h"
 
-#ifdef __DEBUG__
-static void printBuffer(buffer_t *buffer){
+void printBuffer(buffer_t buffer){
     index_t i;
     printf("[");
-    index_t lastValidIndex = (*buffer)[NEXT];
+    index_t lastValidIndex = buffer[NEXT];
     for (i = 0; i < lastValidIndex; i++){
-        printf("%d,", (*buffer)[i]);
+        printf("%d,", buffer[i]);
     }
     printf("] ===> SIZE = %d\n\n\n", lastValidIndex);
 }
-
-static void printNode(buffer_t buf, char *nodeName, index_t nodeIndex){
-    printf("%s: P0 = %d, P1 = %d, P2 = %d, KIND = %d\n",
-            nodeName,
-            getPortValue(buf, nodeIndex, PORT_0),
-            getPortValue(buf, nodeIndex, PORT_1),
-            getPortValue(buf, nodeIndex, PORT_2),
-            getKind(buf, nodeIndex));
-}
-#endif /*__DEBUG__*/
 
 void statsReset(stats_t *stats) {
     stats->loops = 0;
@@ -195,11 +184,6 @@ void reduce(buffer_t buf , stats_t *stats) {
     uint32_t stack_size = 0;
     index_t stack[REDUCE_BUFFER_SIZE];
 
-    #ifdef __DEBUG__
-    printf("Original buffer:\n");
-    printBuffer(&buf);
-    #endif /*__DEBUG__*/
-
     statsReset(stats);
     push(stack, &stack_size, buf[ENTRY_POINT]);
 
@@ -260,10 +244,6 @@ void reduce(buffer_t buf , stats_t *stats) {
             }
         }
     }
-    #ifdef __DEBUG__
-    printf("\n\nReduced buffer:\n");
-    printBuffer(&buf);
-    #endif /*__DEBUG__*/
 }
 
 // This performs the reduction of redexes. It, thus, implements annihilation

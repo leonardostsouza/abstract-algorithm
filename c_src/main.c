@@ -4,20 +4,8 @@
 #include <time.h>
 #include "interaction-combinators.h"
 
-#define FILE_LINE_BUFFER_SIZE 2048
-
-void printBuffer(buffer_t buffer){
-    index_t i;
-    printf("[");
-    index_t lastValidIndex = buffer[NEXT];
-    for (i = 0; i < lastValidIndex; i++){
-        printf("%d,", buffer[i]);
-    }
-    printf("] ===> SIZE = %d\n\n\n", lastValidIndex);
-}
-
 void printStats(stats_t *stats, double execTime){
-    printf("Exec Time: %fs\nloops: %d\nrewrites: %d\ndupls: %d\nannis: %d\nbetas: %d\n",
+    printf("- time\t\t: %fs\n- loops\t\t: %d\n- rewrites\t: %d\n  - dupls\t: %d\n  - annis\t: %d\n  - betas\t: %d\n",
             execTime, stats->loops, stats->rewrites, stats->dupls, stats->annis, stats->betas);
 }
 
@@ -47,13 +35,8 @@ int main(int argc, char **argv){
 
     double execTime = 0.0;
     clock_t begin, end;
-    FILE *origNet;
-    FILE *reducNet;
-    char *line, *pch, *reducLine, *reducPch;
-    size_t line_len = 0, reduc_line_len = 0;
 
     buffer_t graph, graphReduced;
-    index_t index = 0, reducIndex = 0;
     stats_t stats;
 
     bufferInit(&graph);
