@@ -45,7 +45,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define MAX_NODES       4096//1024
+#define MAX_NODES       10000000//1024
 #define NODE_SIZE       4   // Do not change this value!
                             // Each node must have 1 KIND and 3 ports for the
                             // evaluator to run optimaly
@@ -54,7 +54,7 @@
 #define NEXT            (MAX_BUFFER_SIZE - 1)
 #define ENTRY_POINT     (NEXT - 1)
 
-#define REDUCE_BUFFER_SIZE 1024//256 // Buffer used by method reduce() to store steps
+#define REDUCE_BUFFER_SIZE MAX_BUFFER_SIZE//4096//256 // Buffer used by method reduce() to store steps
 
 typedef enum {PORT_0 = 0, PORT_1, PORT_2} port_t;
 #define kind_t uint32_t

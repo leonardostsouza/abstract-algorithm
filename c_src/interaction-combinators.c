@@ -180,10 +180,11 @@ static inline void push(index_t *buffer, uint32_t *stack_size, index_t value){
 // of information, in such a way that only redexes that interfere on the normal
 // form are reduced.
 void reduce(buffer_t buf , stats_t *stats) {
+    printf("ENTREI!\n");
     index_t prev = 0, next = 0, back = 0;
     uint32_t stack_size = 0;
     index_t stack[REDUCE_BUFFER_SIZE];
-
+    printf("ENTREI!2\n");
     statsReset(stats);
     push(stack, &stack_size, buf[ENTRY_POINT]);
 
@@ -197,6 +198,12 @@ void reduce(buffer_t buf , stats_t *stats) {
         #ifdef __DEBUG__
         printf("===========> Loop number %d: prev = %d, next = %d\n",
                 stats->loops, prev, next);
+        printf("reduce() stack size = %d\n", stack_size);
+        printf("Number of nodes = %d\n", (getNodeIndex(buf[NEXT])));
+        #endif /*__DEBUG__*/
+
+        #ifdef __DEBUG__
+
         #endif /*__DEBUG__*/
 
         if(getMeta(buf, getNodeIndex(prev)) == (meta_t)0x3) {

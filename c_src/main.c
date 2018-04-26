@@ -36,35 +36,36 @@ int main(int argc, char **argv){
     double execTime = 0.0;
     clock_t begin, end;
 
-    buffer_t graph, graphReduced;
+    buffer_t *graph, *graphReduced;
     stats_t stats;
-
-    bufferInit(&graph);
-    bufferInit(&graphReduced);
-    statsReset(&stats);
 
     if ((argc != 2) && (argc != 3)) {
         printf("Usage: %s PATH_TO_ORIGINAL_NET_FILE <PATH_TO_REDUCED_NET_FILE>", argv[0]);
         return 1;
     }
 
+    statsReset(&stats);
+
     // populate original network buffer
-    populateBuffer(argv[1], graph);
+    bufferInit(graph);
+    populateBuffer(argv[1], *graph);
 
     if (argc > 2) {
         // populate reduced network buffer
-        populateBuffer(argv[2], graphReduced);
+        bufferInit(graphReduced);
+        populateBuffer(argv[2], *graphReduced);
     }
 
     #ifdef __DEBUG__
     // print original network
     printf("Original Network:\n");
-    printBuffer(graph);
+    //printBuffer(*graph);
     #endif /* __DEBUG__ */
 
     // reduce Network
     begin = clock();
-    reduce(graph, &stats);
+    printf("graph[NEXT] = %d\n", *graph[NEXT]);
+    reduce(*graph, &stats);
     end = clock();
     execTime = (double) (end - begin) / CLOCKS_PER_SEC;
     #ifdef __DEBUG__
@@ -75,17 +76,19 @@ int main(int argc, char **argv){
     #ifdef __DEBUG__
     // print reduced network
     printf("Reduced Network:\n");
-    printBuffer(graph);
+    //printBuffer(*graph);
     #endif /* __DEBUG__ */
 
-    compareBuffers(graph, graphReduced);
+    if (argc > 2) {
+        //compareBuffers(*graph, *graphReduced);
+    }
 
     // print stats
     printStats(&stats, execTime);
 
     // free memory
-    freeBuffer(graph);
-    freeBuffer(graphReduced);
+    freeBuffer(*graph);
+    freeBuffer(*graphReduced);
 
     return EXIT_SUCCESS;
 }

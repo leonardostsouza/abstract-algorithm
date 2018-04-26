@@ -1,6 +1,7 @@
 node_modules/
 c_src/test
 c_src/main
+c_src/main_dbg
 *.csv
 *.mem
 *.o

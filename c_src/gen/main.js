@@ -46,7 +46,7 @@ const reduce_ = (src) => {
     const reducNet = L.net.reduce(origNet);
     execTime = ((Date.now() - start) / 1000);
 
-    return {origNet: origNetStr, reducNet: netToStr(reducNet), ptr: origNet.ptr, stats: reducNet.stats};
+    return {origNet: origNetStr, reducNet: netToStr(reducNet), size: reducNet.mem.length, ptr: origNet.ptr, stats: reducNet.stats};
 }
 
 const statsStr = (stats) => {
@@ -63,20 +63,21 @@ const toCsv = (netStr, ptr) => {
 var result = reduce_(`${base} ${code}`);
 //var result = L.reduce(`${base} ${code}`, 1, bruijn);
 
-console.log("ORIGINAL: " + result.origNet + "\n\n");
-console.log("REDUCED: " + result.reducNet + "\n\n");
+//console.log("ORIGINAL: " + result.origNet + "\n\n");
+//console.log("REDUCED: " + result.reducNet + "\n\n");
 
 
 fs.writeFile(`origNet.csv`, toCsv(result.origNet, result.ptr), function(err){if(err) return console.log(err);});
 fs.writeFile(`reducNet.csv`, toCsv(result.reducNet, result.ptr), function(err){if(err) return console.log(err);});
 fs.writeFile(`stats.mem`, statsStr(result.stats), function(err){if(err) return console.log(err);});
 
+//console.log(result.term);
 // =================== MODIFICATIONS END ===================
 
-console.log(result.term);
 if (stats) {
   console.log("");
-  console.log("- time     : " + ((Date.now() - start) / 1000) + "s");
+  console.log("- size     : " + result.size);
+  console.log("- time     : " + execTime + "s");
   console.log("- loops    : " + result.stats.loops);
   console.log("- rewrites : " + result.stats.rewrites);
   console.log("  - dupls  : " + result.stats.dupls);
