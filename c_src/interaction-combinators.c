@@ -22,15 +22,15 @@ void statsReset(stats_t *stats) {
 // Allocs memory to buffer and writes 0 to all positions
 void bufferInit(buffer_t *buf){
     *buf = (buffer_t) calloc(MAX_BUFFER_SIZE, sizeof(index_t));
-    if (buf == NULL) exit (1);
+    if ((*buf == NULL) || (buf == NULL)) exit (1);
 }
 
 void bufferReset(buffer_t buf){
     memset(buf, 0, sizeof buf);
 }
 
-void freeBuffer(buffer_t buf){
-    free(buf);
+void freeBuffer(buffer_t *buf){
+    free(*buf);
 }
 
 // returns 0 on success and 1 on failure
@@ -180,15 +180,13 @@ static inline void push(index_t *buffer, uint32_t *stack_size, index_t value){
 // of information, in such a way that only redexes that interfere on the normal
 // form are reduced.
 void reduce(buffer_t buf , stats_t *stats) {
-    printf("ENTREI!\n");
     index_t prev = 0, next = 0, back = 0;
     uint32_t stack_size = 0;
     index_t stack[REDUCE_BUFFER_SIZE];
-    printf("ENTREI!2\n");
     statsReset(stats);
     push(stack, &stack_size, buf[ENTRY_POINT]);
 
-    while(stack_size > 0){
+    while(stack_size > 0) {
         ++stats->loops;
 
         prev = pop(stack, &stack_size);
@@ -202,9 +200,6 @@ void reduce(buffer_t buf , stats_t *stats) {
         printf("Number of nodes = %d\n", (getNodeIndex(buf[NEXT])));
         #endif /*__DEBUG__*/
 
-        #ifdef __DEBUG__
-
-        #endif /*__DEBUG__*/
 
         if(getMeta(buf, getNodeIndex(prev)) == (meta_t)0x3) {
             #ifdef __DEBUG__
